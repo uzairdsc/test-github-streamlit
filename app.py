@@ -70,7 +70,7 @@ if uploaded_file:
     # Show run selection only when "Match Spike (Runs Filtered)" is selected
     selected_runs = []
     run_options = ['All', 0, 1, 2, 3, 4, 6]
-    if "Match Spike (Runs Filtered)" in plot_types and "Colored Quadrant Wagon" in plot_types:
+    if "Match Spike (Runs Filtered)" in plot_types or "Colored Quadrant Wagon" in plot_types:
         # selected_runs = st.multiselect(
         #     "Select Runs to Include (Filter)", [0, 1, 2, 3, 4, 6], default=[1, 2, 4, 6]
         # )
