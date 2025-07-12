@@ -20,7 +20,7 @@ if not st.session_state.authenticated:
     if password_input == APP_PASSWORD:
         st.success("Access granted.")
         st.session_state.authenticated = True
-        st.experimental_rerun()
+        st.rerun()
     elif password_input:
         st.error("Invalid password. Try again.")
     st.stop()
@@ -87,21 +87,21 @@ if uploaded_file:
     if plot_types:
         if "Match Spike (Runs by Color)" in plot_types:
             st.subheader("🎯 Match Spike Plot")
-            fig = test_match_spike(df, selected_player, selected_inns)
+            fig = test_match_spike(df, selected_player, selected_inns, selected_bowler)
             col1, col2, col3 = st.columns([2, 2, 2])
             with col1:
                 st.pyplot(fig)
 
         if "Match Spike (Runs Filtered)" in plot_types and selected_runs:
             st.subheader("🎯 Match Spike Plot (Filtered by Runs)")
-            fig = test_match_spike_runs(df, selected_player, selected_inns, filtered_runs)
+            fig = test_match_spike_runs(df, selected_player, selected_inns, filtered_runs,selected_bowler)
             col1, col2, col3 = st.columns([2, 2, 2])
             with col1:
                 st.pyplot(fig)
 
         if "Colored Quadrant Wagon" in plot_types:
             st.subheader("🎨 Colored Quadrant Wagon")
-            fig = test_match_wagon_colored(df, selected_player, selected_inns)
+            fig = test_match_wagon_colored(df, selected_player, selected_inns, selected_bowler)
             col1, col2, col3 = st.columns([2, 2, 2])
             with col1:
                 st.pyplot(fig)
