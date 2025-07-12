@@ -52,7 +52,7 @@ if uploaded_file:
     selected_inns = st.selectbox("Select Innings", innings_options)
 
     bowler_list = sorted(df['bowlerName'].dropna().unique())
-    selected_bowler = st.selectbox("Select Bowler (Optional)", [None] + bowler_list)
+    selected_bowler = st.selectbox("Select Bowler", [None] + bowler_list)
 
     # Plot selection
     st.markdown("**Select Plot Types to Display:**")
