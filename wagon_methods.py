@@ -456,8 +456,8 @@ def test_match_spike_runs(df, player_name, inns, run_values, bowler_name=None):
 #     # plt.show()
 #     return fig
 
-def test_match_wagon_colored(df, player_name, inns, bowler_name=None):
-    # Filter by player, innings, and optionally bowler
+def test_match_wagon_colored(df, player_name, inns, bowler_name=None, run_values=None):
+    # Filter by player and innings
     local_df = df[
         (df['batsmanName'] == player_name) &
         (df['inningNumber'] == inns)
@@ -465,6 +465,9 @@ def test_match_wagon_colored(df, player_name, inns, bowler_name=None):
 
     if bowler_name:
         local_df = local_df[local_df['bowlerName'] == bowler_name]
+
+    if run_values is not None and len(run_values) > 0:
+        local_df = local_df[local_df['batsmanRuns'].isin(run_values)]
 
     balls_faced_df = local_df[
         (local_df['batsmanName'] == player_name) & (local_df['wides'] == 0)
@@ -498,7 +501,6 @@ def test_match_wagon_colored(df, player_name, inns, bowler_name=None):
     center_x, center_y = 180, 164
     boundary_radius = 180
 
-    # Define quadrant based on angle
     def get_quadrant(x, y):
         angle = np.arctan2(y - center_y, x - center_x)
         degree = (np.degrees(angle) + 360) % 360
@@ -508,7 +510,6 @@ def test_match_wagon_colored(df, player_name, inns, bowler_name=None):
         lambda row: get_quadrant(row['wagonX'], row['wagonY']), axis=1
     )
 
-    # Compute quadrant scores
     quadrant_totals = [0] * 8
     total_score = 0
     for q in range(8):
@@ -537,30 +538,26 @@ def test_match_wagon_colored(df, player_name, inns, bowler_name=None):
         rad = np.deg2rad(angle)
         x_end = center_x + 180 * np.cos(rad)
         y_end = center_y + 180 * np.sin(rad)
-        ax.plot([center_x, x_end], [center_y, y_end],
-                color='black', linestyle='--', linewidth=1)
+        ax.plot([center_x, x_end], [center_y, y_end], color='black', linestyle='--', linewidth=1)
 
     for i in range(8):
         mid_angle = np.deg2rad(i * 45 + 22.5)
         label_x = center_x + 100 * np.cos(mid_angle)
         label_y = center_y + 100 * np.sin(mid_angle)
-        ax.text(label_x, label_y, f"{quadrant_totals[i]} runs",
-                fontsize=13, color='black', ha='center', va='center')
+        ax.text(label_x, label_y, f"{quadrant_totals[i]} runs", fontsize=13, color='black', ha='center', va='center')
 
-    # Dynamic title
+    # Title & annotation
     title_text = f"{player_name} Wagon Wheel - Innings {inns}"
     if bowler_name:
         title_text += f" vs {bowler_name}"
     ax.set_title(title_text, fontsize=12)
 
-    # Dynamic run annotation
     bottom_text = f"Total Runs Scored by {player_name} in Innings {inns}"
     if bowler_name:
         bottom_text += f" vs {bowler_name}"
     bottom_text += f": {total_score} ({balls_faced_df.shape[0]})"
 
-    ax.text(180, 370, bottom_text,
-            fontsize=12, ha='center', va='center', fontweight='bold', color='black')
+    ax.text(180, 370, bottom_text, fontsize=12, ha='center', va='center', fontweight='bold', color='black')
 
     ax.set_xlim(-20, 380)
     ax.set_ylim(-20, 380)
@@ -572,8 +569,8 @@ def test_match_wagon_colored(df, player_name, inns, bowler_name=None):
 
     plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07)
     plt.close(fig)
-    # plt.show()
     return fig
+    # plt.show()
 
 
 

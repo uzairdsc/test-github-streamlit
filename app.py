@@ -52,7 +52,7 @@ if uploaded_file:
     selected_inns = st.selectbox("Select Innings", innings_options)
 
     bowler_list = sorted(df['bowlerName'].dropna().unique())
-    selected_bowler = st.selectbox("Select Bowler", [None] + bowler_list)
+    selected_bowler = st.selectbox("Select Bowler (Optional)", [None] + bowler_list)
 
     # Plot selection
     st.markdown("**Select Plot Types to Display:**")
@@ -70,7 +70,7 @@ if uploaded_file:
     # Show run selection only when "Match Spike (Runs Filtered)" is selected
     selected_runs = []
     run_options = ['All', 0, 1, 2, 3, 4, 6]
-    if "Match Spike (Runs Filtered)" in plot_types:
+    if "Match Spike (Runs Filtered)" in plot_types and "Colored Quadrant Wagon" in plot_types:
         # selected_runs = st.multiselect(
         #     "Select Runs to Include (Filter)", [0, 1, 2, 3, 4, 6], default=[1, 2, 4, 6]
         # )
@@ -101,7 +101,7 @@ if uploaded_file:
 
         if "Colored Quadrant Wagon" in plot_types:
             st.subheader("🎨 Colored Quadrant Wagon")
-            fig = test_match_wagon_colored(df, selected_player, selected_inns, selected_bowler)
+            fig = test_match_wagon_colored(df, selected_player, selected_inns, selected_bowler, filtered_runs)
             col1, col2, col3 = st.columns([2, 2, 2])
             with col1:
                 st.pyplot(fig)
