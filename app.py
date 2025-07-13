@@ -34,6 +34,8 @@ if not st.session_state.authenticated:
 # )
 from SpikePlot import test_match_spike_runs as spike_plot_custom
 
+from WagonZonePlot import test_match_wagon as wagon_zone_plot
+
 st.set_page_config(page_title="Cricket Wagon Wheel App", layout="wide")
 st.title("🏏 Cricket Shot Analysis Dashboard")
 
@@ -57,16 +59,22 @@ if uploaded_file:
     plot_types = st.multiselect(
         "Choose plot(s):",
         [
-            "Match Spike (Runs Filtered)",
-            "Colored Quadrant Wagon",
-            "Spike Plot with Stats"
+            # "Match Spike (Runs Filtered)",
+            # "Colored Quadrant Wagon",
+            "Spike Plot with Stats",
+            "Wagon Zone Plot with Stats"
         ]
     )
 
     selected_runs = []
     run_options = ['All', 0, 1, 2, 3, 4, 6]
-    if any(p in plot_types for p in ["Match Spike (Runs Filtered)", "Colored Quadrant Wagon", "Spike Plot with Stats"]):
-        selected_runs = st.multiselect("Select Runs", run_options, default=['All'])
+    default_runs = ['All']  # keeps "All" selected visually
+
+    # Convert to full list of values if 'All' is selected
+    # filtered_runs = [0, 1, 2, 3, 4, 6] if 'All' in selected_runs else selected_runs
+    if any(p in plot_types for p in ["Spike Plot with Stats", "Wagon Zone Plot with Stats"]):
+        # selected_runs = st.multiselect("Select Runs", run_options, default=['All'])
+        selected_runs = st.multiselect("Select Runs", run_options, default=default_runs)
 
     filtered_runs = [0, 1, 2, 3, 4, 6] if 'All' in selected_runs else selected_runs
 
@@ -89,6 +97,22 @@ if uploaded_file:
         if "Spike Plot with Stats" in plot_types:
             st.subheader("📊 Spike Plot with Stats")
             fig = spike_plot_custom(df, selected_player, selected_inns, filtered_runs, selected_bowler, transparent=transparent_bg)
+            col1, col2, col3 = st.columns([2, 2, 2])
+            with col1:
+                st.pyplot(fig)
+
+            # Download button for plot
+            buf = BytesIO()
+            fig.savefig(buf, format="png", transparent=transparent_bg)
+            st.download_button(
+                label="📅 Download Plot as PNG",
+                data=buf.getvalue(),
+                file_name=f"{selected_player}_innings{selected_inns}_spike_plot.png",
+                mime="image/png"
+            )
+        if "Wagon Zone Plot with Stats" in plot_types:
+            st.subheader("📊 Wagon Zone Plot with Stats")
+            fig = wagon_zone_plot(df, selected_player, selected_inns, selected_bowler, filtered_runs, transparent=transparent_bg)
             col1, col2, col3 = st.columns([2, 2, 2])
             with col1:
                 st.pyplot(fig)
