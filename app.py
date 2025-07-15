@@ -59,7 +59,8 @@ if uploaded_file:
     player_list = sorted(df[df['team_bat'] == selected_team]['batsmanName'].dropna().unique())
     selected_player = st.selectbox("Select Player", player_list)
 
-    innings_options = sorted(df['inningNumber'].dropna().unique())
+    # innings_options = sorted(df['inningNumber'].dropna().unique())
+    innings_options = sorted(df[df['team_bat'] == selected_team]['inningNumber'].dropna().unique())
     selected_inns = st.selectbox("Select Innings", innings_options)
 
     bowler_list = sorted(df['bowlerName'].dropna().unique())
