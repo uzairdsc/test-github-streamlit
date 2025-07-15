@@ -8,7 +8,12 @@ from io import BytesIO
 
 
 
-def test_match_wagon(df, player_name, inns, bowler_name=None, run_values=None,transparent=False):
+# def test_match_wagon(df, player_name, inns, bowler_name=None, run_values=None,transparent=False):
+def test_match_wagon(
+    df, player_name, inns, bowler_name=None, run_values=None, transparent=False,
+    show_title=True, show_total=True,
+    show_fours_sixes=True, show_control=True, show_prod_shot=True
+):
     # Filter by match, player, and innings
     local_df = df[
         (df['batsmanName'] == player_name) &
@@ -30,9 +35,29 @@ def test_match_wagon(df, player_name, inns, bowler_name=None, run_values=None,tr
         local_df = local_df[local_df['batsmanRuns'].isin(run_values)]
 
     # Filter valid shot points
+    # balls_faced_df = local_df[
+    #     (local_df['batsmanName'] == player_name) & (local_df['wides'] == 0)
+    # ][['batsmanName', 'wagonX', 'wagonY', 'teamRuns', 'batsmanRuns']].dropna()
+
+    # Full innings (unfiltered) balls for shot control calc
+    full_balls_df = df[
+        (df['batsmanName'] == player_name) &
+        (df['inningNumber'] == inns) &
+        (df['wides'] == 0)
+    ]
+
+    # Full innings valid shot data (unfiltered) for productive shot calc
+    all_shots_data = df[
+        (df['batsmanName'] == player_name) &
+        (df['inningNumber'] == inns) &
+        ~((df['wagonX'] == 0) & (df['wagonY'] == 0))
+    ][['wagonX', 'wagonY', 'teamRuns', 'batsmanRuns', 'isFour', 'isSix', 'shotControl', 'shotType']].dropna()
+
+    # This is filtered shot data based on selected run values (for plotting only)
     balls_faced_df = local_df[
         (local_df['batsmanName'] == player_name) & (local_df['wides'] == 0)
     ][['batsmanName', 'wagonX', 'wagonY', 'teamRuns', 'batsmanRuns']].dropna()
+
 
 
     player_data = local_df[
@@ -58,11 +83,16 @@ def test_match_wagon(df, player_name, inns, bowler_name=None, run_values=None,tr
     # Additional stats
     total_4s = int(player_data['isFour'].sum())
     total_6s = int(player_data['isSix'].sum())
-    control_pct = round((local_df[(local_df['wides'] == 0) & (local_df['shotControl'] == 0)].shape[0]) / balls_faced_df.shape[0] * 100, 2)
+    # control_pct = round((local_df[(local_df['wides'] == 0) & (local_df['shotControl'] == 0)].shape[0]) / balls_faced_df.shape[0] * 100, 2)
+    control_pct = round(
+        (full_balls_df[full_balls_df['shotControl'] == 0].shape[0]) / full_balls_df.shape[0] * 100, 2
+    )
 
     # Most productive shot
-    if 'shotType' in player_data.columns and not player_data.empty:
-        shot_summary = player_data.groupby('shotType').agg({
+    if 'shotType' in all_shots_data.columns and not all_shots_data.empty:
+        shot_summary = all_shots_data.groupby('shotType').agg({
+    # if 'shotType' in player_data.columns and not player_data.empty:
+    #     shot_summary = player_data.groupby('shotType').agg({
             'batsmanRuns': 'sum',
             'isFour': 'sum',
             'isSix': 'sum'
@@ -198,7 +228,9 @@ def test_match_wagon(df, player_name, inns, bowler_name=None, run_values=None,tr
     ax.set_yticklabels([])
     ax.set_aspect('equal', adjustable='box')
 
-    ax.set_title(f"{player_name} Wagon Wheel Innings: {inns}", fontsize=12)
+    # ax.set_title(f"{player_name} Wagon Wheel Innings: {inns}", fontsize=12)
+    if show_title:   
+        ax.set_title(f"{player_name} Wagon Wheel Innings: {inns}", fontsize=12)
 
     # ax.text(180, 360, f"Total Runs: {total_score} ({balls_faced_df.shape[0]} balls)",
     #         fontsize=11, ha='center', fontweight='bold', color='black')
@@ -206,14 +238,18 @@ def test_match_wagon(df, player_name, inns, bowler_name=None, run_values=None,tr
     #         fontsize=11, ha='center', color='darkgreen')
     # ax.text(180, 390, f"Most Productive Shot: {most_prod_shot_text}",
     #         fontsize=11, ha='center', color='navy')
-    ax.text(180, 360, f"Total Runs: {total_score} ({balls_faced_df.shape[0]} balls)",
-            fontsize=11, ha='center', fontweight='bold')
-    ax.text(180, 375, f"4s: {total_4s} | 6s: {total_6s}",
-            fontsize=11, ha='center', color='darkgreen')
-    ax.text(180, 390, f"Control: {control_pct}%",
-            fontsize=11, ha='center', color='purple')
-    ax.text(180, 405, f"Most Productive Shot: {most_prod_shot_text}",
-            fontsize=11, ha='center', color='navy')
+    if show_total:
+        ax.text(180, 360, f"Total Runs: {total_score} ({balls_faced_df.shape[0]} balls)",
+                fontsize=11, ha='center', fontweight='bold')
+    if show_fours_sixes:  
+        ax.text(180, 375, f"4s: {total_4s} | 6s: {total_6s}",
+                fontsize=11, ha='center', color='darkgreen')
+    if show_control:
+        ax.text(180, 390, f"Control: {control_pct}%",
+                fontsize=11, ha='center', color='purple')
+    if show_prod_shot:
+        ax.text(180, 405, f"Most Productive Shot: {most_prod_shot_text}",
+                fontsize=11, ha='center', color='navy')
 
     ax.invert_yaxis()
     ax.set_axis_off()
