@@ -4,8 +4,15 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from io import BytesIO
+import matplotlib.image as mpimg
 
-def test_match_spike_runs(df, player_name, inns, run_values=None, bowler_name=None, transparent=False):
+
+# def test_match_spike_runs(df, player_name, inns, run_values=None, bowler_name=None, transparent=False):
+def test_match_spike_runs(
+    df, player_name, inns, run_values=None, bowler_name=None, transparent=False,
+    show_title=True, show_legend=True, show_total=True,
+    show_fours_sixes=True, show_control=True, show_prod_shot=True
+):
     # Filter by match, player, and innings
     local_df = df[
         (df['batsmanName'] == player_name) & (df['inningNumber'] == inns)
@@ -13,6 +20,11 @@ def test_match_spike_runs(df, player_name, inns, run_values=None, bowler_name=No
 
     if bowler_name:
         local_df = local_df[local_df['bowlerName'] == bowler_name]
+
+    # This keeps a copy of the full innings shot data (unfiltered)
+    all_shots_data = local_df[
+        ~((local_df['wagonX'] == 0) & (local_df['wagonY'] == 0))
+    ][['wagonX', 'wagonY', 'teamRuns', 'batsmanRuns', 'isFour', 'isSix', 'shotControl', 'shotType']].dropna()
 
     # Apply run filter
     if run_values is None:
@@ -60,8 +72,9 @@ def test_match_spike_runs(df, player_name, inns, run_values=None, bowler_name=No
     # control_pct = round((valid_balls['shotControl'] == 1).sum() / valid_balls.shape[0] * 100, 2)
 
     # Most productive shot calculation
-    if 'shotType' in player_data.columns and not player_data.empty:
-        shot_summary = player_data.groupby('shotType').agg({
+    if 'shotType' in all_shots_data.columns and not all_shots_data.empty:
+    # if 'shotType' in player_data.columns and not player_data.empty:
+        shot_summary = all_shots_data.groupby('shotType').agg({
             'batsmanRuns': 'sum',
             'isFour': 'sum',
             'isSix': 'sum'
@@ -81,13 +94,23 @@ def test_match_spike_runs(df, player_name, inns, run_values=None, bowler_name=No
 
     # Color map
     score_colors = {
-        0: '#A9A9A9',
+        # 0: '#A9A9A9',
+        0: '#FFFFFF',   # White (dot balls)
         1: '#00C853',
         2: '#2979FF',
         3: '#FF9100',
+        5: '#C62828',  # Dark Red
         4: '#D50000',
         6: '#AA00FF'
     }
+    # score_colors = {
+    #     0: '#FFFFFF',   # White (dot balls)
+    #     1: '#00FF00',   # Neon Green
+    #     2: '#00FFFF',   # Aqua / Cyan
+    #     3: '#FFEB3B',   # Bright Yellow
+    #     4: '#FF5722',   # Bright Orange
+    #     6: '#FF00FF',   # Magenta
+    # }
     player_data['color'] = player_data['batsmanRuns'].map(score_colors).fillna('black')
 
     # Plot setup
@@ -97,10 +120,19 @@ def test_match_spike_runs(df, player_name, inns, run_values=None, bowler_name=No
     ax.set_facecolor('none' if transparent else 'white')
     center_x, center_y = 180, 164
 
+     # ⬇️ Add background image
+    if not transparent:
+        bg_img = mpimg.imread("ground_high_res.png")  # Make sure this path is correct
+        ax.imshow(bg_img, extent=[0, 360, 30, 360], aspect='auto', zorder=0)
+
     # Draw lines
     for _, row in player_data.iterrows():
         ax.plot([center_x, row['wagonX']], [center_y, row['wagonY']],
-                color=row['color'], linewidth=1.0, alpha=0.8)
+                color=row['color'], linewidth=1.0, alpha=0.8, zorder=1)
+    # Draw lines
+    # for _, row in player_data.iterrows():
+    #     ax.plot([center_x, row['wagonX']], [center_y, row['wagonY']],
+    #             color=row['color'], linewidth=1.0, alpha=0.8)
 
     # Boundary
     # boundary = plt.Circle((center_x, center_y), 175, color='black',
@@ -108,9 +140,13 @@ def test_match_spike_runs(df, player_name, inns, run_values=None, bowler_name=No
     # ax.add_artist(boundary)
 
     # Pitch
-    pitch = plt.Rectangle((center_x - 1.5, center_y), 3, 20.12,
-                          edgecolor='black', facecolor='none', linewidth=1.5)
-    ax.add_artist(pitch)
+    # pitch = plt.Rectangle((center_x - 1.5, center_y), 3, 20.12,
+    #                       edgecolor='black', facecolor='none', linewidth=1.5)
+    # ax.add_artist(pitch)
+
+    #batter position dot
+    batter_dot = plt.Circle((center_x, center_y), radius=3, edgecolor='black', facecolor='green', linewidth=1, zorder=2)
+    ax.add_artist(batter_dot)
 
     # Quadrants
     def get_quadrant(x, y):
@@ -131,21 +167,55 @@ def test_match_spike_runs(df, player_name, inns, run_values=None, bowler_name=No
         total_score += q_score
 
     # Layout
+    # ax.set_xlim(-20, 380)
+    # ax.set_ylim(-20, 410)
+    # ax.set_xticks([]), ax.set_yticks([])
+    # ax.set_xticklabels([]), ax.set_yticklabels([])
+    # ax.set_aspect('equal', adjustable='box')
+    # ax.set_title(f"{player_name} Spike Graph Wheel Innings: {inns}", fontsize=12)
+
+    # ax.text(180, 360, f"Total Runs: {total_score} ({balls_faced_df.shape[0]} balls)",
+    #         fontsize=11, ha='center', fontweight='bold')
+    # ax.text(180, 375, f"4s: {total_4s} | 6s: {total_6s}",
+    #         fontsize=11, ha='center', color='darkgreen')
+    # ax.text(180, 390, f"Control: {control_pct}%",
+    #         fontsize=11, ha='center', color='purple')
+    # ax.text(180, 405, f"Most Productive Shot: {most_prod_shot_text}",
+    #         fontsize=11, ha='center', color='navy')
     ax.set_xlim(-20, 380)
-    ax.set_ylim(-20, 410)
+    ax.set_ylim(-20, 420)
     ax.set_xticks([]), ax.set_yticks([])
     ax.set_xticklabels([]), ax.set_yticklabels([])
     ax.set_aspect('equal', adjustable='box')
-    ax.set_title(f"{player_name} Spike Graph Wheel Innings: {inns}", fontsize=12)
 
-    ax.text(180, 360, f"Total Runs: {total_score} ({balls_faced_df.shape[0]} balls)",
-            fontsize=11, ha='center', fontweight='bold')
-    ax.text(180, 375, f"4s: {total_4s} | 6s: {total_6s}",
-            fontsize=11, ha='center', color='darkgreen')
-    ax.text(180, 390, f"Control: {control_pct}%",
-            fontsize=11, ha='center', color='purple')
-    ax.text(180, 405, f"Most Productive Shot: {most_prod_shot_text}",
-            fontsize=11, ha='center', color='navy')
+    # ax.set_title(f"{player_name} Spike Graph Wheel Innings: {inns}", fontsize=12)
+    if show_title:
+        ax.set_title(f"{player_name} Spike Graph Wheel Innings: {inns}", fontsize=12)
+
+    if show_total:
+        ax.text(180, 375, f"Total Runs: {total_score} ({balls_faced_df.shape[0]} balls)",
+                fontsize=11, ha='center', fontweight='bold')
+
+    if show_fours_sixes:
+        ax.text(180, 388, f"4s: {total_4s} | 6s: {total_6s}",
+                fontsize=11, ha='center', color='darkgreen')
+
+    if show_control:
+        ax.text(180, 402, f"Control: {control_pct}%",
+                fontsize=11, ha='center', color='purple')
+
+    if show_prod_shot:
+        ax.text(180, 415, f"Most Productive Shot: {most_prod_shot_text}",
+                fontsize=11, ha='center', color='navy')
+
+    # ax.text(180, 375, f"Total Runs: {total_score} ({balls_faced_df.shape[0]} balls)",
+    #         fontsize=11, ha='center', fontweight='bold')
+    # ax.text(180, 388, f"4s: {total_4s} | 6s: {total_6s}",
+    #         fontsize=11, ha='center', color='darkgreen')
+    # ax.text(180, 402, f"Control: {control_pct}%",
+    #         fontsize=11, ha='center', color='purple')
+    # ax.text(180, 415, f"Most Productive Shot: {most_prod_shot_text}",
+    #         fontsize=11, ha='center', color='navy')
 
     ax.invert_yaxis()
     ax.set_axis_off()
@@ -155,7 +225,11 @@ def test_match_spike_runs(df, player_name, inns, run_values=None, bowler_name=No
         mpatches.Patch(color=color, label=f'{score} run' + ('s' if score != 1 else ''))
         for score, color in score_colors.items() if run_values is None or score in run_values
     ]
-    ax.legend(handles=legend_elements, loc='upper right', fontsize=8)
+
+    # ax.legend(handles=legend_elements, loc='upper right', fontsize=8)
+    
+    if show_legend:
+        ax.legend(handles=legend_elements, loc='upper right', fontsize=8)
 
     plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07)
     plt.close(fig)
