@@ -59,11 +59,16 @@ if uploaded_file:
     player_list = sorted(df[df['team_bat'] == selected_team]['batsmanName'].dropna().unique())
     selected_player = st.selectbox("Select Player", player_list)
 
-    # innings_options = sorted(df['inningNumber'].dropna().unique())
+    # we will sort the innings when team bat is selected_team
     innings_options = sorted(df[df['team_bat'] == selected_team]['inningNumber'].dropna().unique())
+    # innings_options = sorted(df['inningNumber'].dropna().unique())
     selected_inns = st.selectbox("Select Innings", innings_options)
 
-    bowler_list = sorted(df['bowlerName'].dropna().unique())
+    # bowler_list = sorted(df['bowlerName'].dropna().unique())
+    # Only include bowlers from the opposition team (not batting team)
+    bowler_list = sorted(
+        df[df['team_bowl'] != selected_team]['bowlerName'].dropna().unique()
+    )
     selected_bowler = st.selectbox("Select Bowler", [None] + bowler_list)
 
     st.markdown("**Select Plot Types to Display:**")
@@ -77,19 +82,20 @@ if uploaded_file:
         ]
     )
 
-    selected_runs = []
-    run_options = ['All', 0, 1, 2, 3, 4, 5, 6]
-    default_runs = ['All']  # keeps "All" selected visually
+    # selected_runs = []
+    # run_options = ['All', 0, 1, 2, 3, 4, 5, 6]
+    # default_runs = ['All']  # keeps "All" selected visually
 
-    # Convert to full list of values if 'All' is selected
+    # # Convert to full list of values if 'All' is selected
+    # # filtered_runs = [0, 1, 2, 3, 4, 6] if 'All' in selected_runs else selected_runs
+    # if any(p in plot_types for p in ["Spike Plot with Stats", "Wagon Zone Plot with Stats"]):
+    #     # selected_runs = st.multiselect("Select Runs", run_options, default=['All'])
+    #     selected_runs = st.multiselect("Select Runs", run_options, default=default_runs)
+
     # filtered_runs = [0, 1, 2, 3, 4, 6] if 'All' in selected_runs else selected_runs
-    if any(p in plot_types for p in ["Spike Plot with Stats", "Wagon Zone Plot with Stats"]):
-        # selected_runs = st.multiselect("Select Runs", run_options, default=['All'])
-        selected_runs = st.multiselect("Select Runs", run_options, default=default_runs)
-
-    filtered_runs = [0, 1, 2, 3, 4, 6] if 'All' in selected_runs else selected_runs
 
     transparent_bg = st.checkbox("Transparent Background for Plots", value=False)
+    fig_spike, fig_wagon = None, None
 
     if plot_types:
         # if "Match Spike (Runs Filtered)" in plot_types and selected_runs:
@@ -106,88 +112,185 @@ if uploaded_file:
         #         st.pyplot(fig)
 
         if "Spike Plot with Stats" in plot_types:
-            st.subheader("📊 Spike Plot with Stats")
+            # make the subheader centered
+            st.markdown("<h2 style='text-align: center;'>📊 Spike Plot with Stats</h2>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([2, 2, 2])
-            with col2:
+            with col1:
                 st.markdown("## ⚙️ Customize Plot Info")
                 show_title = st.checkbox("Show Plot Title", value=True)
                 show_legend = st.checkbox("Show Legend", value=True)
-                show_total = st.checkbox("Show Total Runs", value=True)
+                show_summary = st.checkbox("Show Runs Summary", value=True)
+                runs_count = st.checkbox("Show Runs Count", value=True)
                 show_fours_sixes = st.checkbox("Show 4s and 6s", value=True)
                 show_control = st.checkbox("Show Control %", value=True)
                 show_prod_shot = st.checkbox("Show Productive Shot", value=True)
+
+
+                # transparent_bg = st.checkbox("Transparent Background for Plots", value=False)
+            # with col3:
+            #     st.markdown("## 🌟 Filter Runs")
+            #     run_all = st.checkbox("All Runs", key="run_all")
+
+            #     run_selections = {}
+            #     for i in range(7):
+            #         run_selections[i] = st.checkbox(str(i), key=f"run_{i}")
+
+            #     filtered_runs = []
+            #     if not run_all:
+            #         filtered_runs = [i for i, selected in run_selections.items() if selected]
+            #     else:
+            #         filtered_runs = None
+            with col3:
+                st.markdown("## Run Filter (Spike Plot)")
+
+                # Initialize session state (only once)
+                if "run_init_spike" not in st.session_state:
+                    st.session_state["run_all_spike"] = True
+                    for i in range(7):
+                        st.session_state[f'run_{i}_spike'] = True
+                    st.session_state["run_init_spike"] = True
+
+                # When 'All' checkbox is changed
+                def sync_all_to_individual_spike():
+                    all_selected = st.session_state["run_all_spike"]
+                    for i in range(7):
+                        st.session_state[f'run_{i}_spike'] = all_selected
+
+                # When any individual checkbox is changed
+                def sync_individual_to_all_spike():
+                    all_selected = all(st.session_state[f'run_{i}_spike'] for i in range(7))
+                    st.session_state["run_all_spike"] = all_selected
+
+                # All checkbox
+                st.checkbox("All", key="run_all_spike", on_change=sync_all_to_individual_spike)
+
+                # Individual run checkboxes
+                for i in range(7):
+                    st.checkbox(str(i), key=f'run_{i}_spike', on_change=sync_individual_to_all_spike)
+
+                # Determine filtered runs
+                individual_selected_spike = [i for i in range(7) if st.session_state.get(f'run_{i}_spike', False)]
+
+                if st.session_state["run_all_spike"]:
+                    filtered_runs_spike = None  # Means 'All selected'
+                elif individual_selected_spike:
+                    filtered_runs_spike = individual_selected_spike
+                else:
+                    filtered_runs_spike = []  # Empty selection → show warning
+                    
+            if "Spike Plot with Stats" in plot_types:
+                if filtered_runs_spike == []:
+                    st.warning("Please select at least one run value to display the plot.")
+                else:
+                    fig_spike = spike_plot_custom(
+                        df, selected_player, selected_inns, filtered_runs_spike, selected_bowler,
+                        transparent=transparent_bg,
+                        show_title=show_title,
+                        show_summary=show_summary,
+                        show_legend=show_legend,
+                        runs_count=runs_count,
+                        show_fours_sixes=show_fours_sixes,
+                        show_control=show_control,
+                        show_prod_shot=show_prod_shot
+                    )
+                    with col2:
+                        st.pyplot(fig_spike)
             # fig = spike_plot_custom(df, selected_player, selected_inns, filtered_runs, selected_bowler, transparent=transparent_bg)
-            fig = spike_plot_custom(
-                df, selected_player, selected_inns, filtered_runs, selected_bowler,
-                transparent=transparent_bg,
-                show_title=show_title,
-                show_legend=show_legend,
-                show_total=show_total,
-                show_fours_sixes=show_fours_sixes,
-                show_control=show_control,
-                show_prod_shot=show_prod_shot
-            )
-            with col1:
-                st.pyplot(fig)
             
-            with col2:
+            with col1:
                 # Download button for plot
                 buf = BytesIO()
-                fig.savefig(buf, format="png", transparent=transparent_bg)
-                # st.download_button(
-                #     label="📅 Download Plot as PNG",
-                #     data=buf.getvalue(),
-                #     file_name=f"{selected_player}_innings{selected_inns}_spike_plot.png",
-                #     mime="image/png"
-                # )
-                st.download_button(
-                label="📅 Download Plot as PNG",
-                data=buf.getvalue(),
-                file_name=f"{selected_player}_innings{selected_inns}_spike_plot.png",
-                mime="image/png",
-                key="spike_download"
-                )
+                if fig_spike:
+                    fig_spike.savefig(buf, format="png", transparent=transparent_bg)
+                    st.download_button(
+                        label="📅 Download Plot as PNG",
+                        data=buf.getvalue(),
+                        file_name=f"{selected_player}_innings{selected_inns}_spike_plot.png",
+                        mime="image/png",
+                        key="spike_download"
+                    )
+                else:
+                    st.warning("No plot available to download (check your run filters or data).")
         if "Wagon Zone Plot with Stats" in plot_types:
-            st.subheader("📊 Wagon Zone Plot with Stats")
-            fig = wagon_zone_plot(df, selected_player, selected_inns, selected_bowler, filtered_runs, transparent=transparent_bg)
+            st.markdown("<h2 style='text-align: center;'>📊 Wagon Zone Plot with Stats</h2>", unsafe_allow_html=True)
+            # fig = wagon_zone_plot(df, selected_player, selected_inns, selected_bowler, filtered_runs, transparent=transparent_bg)
             col1, col2, col3 = st.columns([2, 2, 2])
-            with col2:
+            with col1:
                 st.markdown("## ⚙️ Customize Plot Info")    
                 show_title_wagon = st.checkbox("Show Plot Title (Wagon)", value=True, key="wagon_title")
-                show_total_wagon = st.checkbox("Show Total Runs (Wagon)", value=True, key="wagon_total")
+                show_summary_wagon = st.checkbox("Show Runs Summary (Wagon)", value=True, key="wagon_summary")
+                runs_count_wagon = st.checkbox("Show Total Runs (Wagon)", value=True, key="wagon_total")
                 show_fours_sixes_wagon = st.checkbox("Show 4s and 6s (Wagon)", value=True, key="wagon_fs")
                 show_control_wagon = st.checkbox("Show Control % (Wagon)", value=True, key="wagon_ctrl")
                 show_prod_shot_wagon = st.checkbox("Show Productive Shot (Wagon)", value=True, key="wagon_prod")
+            with col3:
+                st.markdown("## Run Filter (Wagon Plot)")
+
+                # Initialize session state (only once)
+                if "run_init_wagon" not in st.session_state:
+                    st.session_state["run_all_wagon"] = True
+                    for i in range(7):
+                        st.session_state[f'run_{i}_wagon'] = True
+                    st.session_state["run_init_wagon"] = True
+
+                # When 'All' checkbox is changed
+                def sync_all_to_individual_wagon():
+                    all_selected = st.session_state["run_all_wagon"]
+                    for i in range(7):
+                        st.session_state[f'run_{i}_wagon'] = all_selected
+
+                # When any individual checkbox is changed
+                def sync_individual_to_all_wagon():
+                    all_selected = all(st.session_state[f'run_{i}_wagon'] for i in range(7))
+                    st.session_state["run_all_wagon"] = all_selected
+
+                # All checkbox
+                st.checkbox("All", key="run_all_wagon", on_change=sync_all_to_individual_wagon)
+
+                # Individual run checkboxes
+                for i in range(7):
+                    st.checkbox(str(i), key=f'run_{i}_wagon', on_change=sync_individual_to_all_wagon)
+
+                # Determine filtered runs
+                individual_selected_wagon = [i for i in range(7) if st.session_state.get(f'run_{i}_wagon', False)]
+
+                if st.session_state["run_all_wagon"]:
+                    filtered_runs_wagon = None  # Means 'All selected'
+                elif individual_selected_wagon:
+                    filtered_runs_wagon = individual_selected_wagon
+                else:
+                    filtered_runs_wagon = []  # Empty selection → show warning
+
+            if "Wagon Zone Plot with Stats" in plot_types:
+                if filtered_runs_wagon == []:
+                    st.warning("Please select at least one run value to display the plot.")
+                else:
+                    with col2:
+                        fig_wagon = wagon_zone_plot(
+                                df, selected_player, selected_inns, selected_bowler, filtered_runs_wagon,
+                                transparent=transparent_bg,
+                                show_title=show_title_wagon,
+                                show_summary=show_summary_wagon,
+                                runs_count=runs_count_wagon,
+                                show_fours_sixes=show_fours_sixes_wagon,
+                                show_control=show_control_wagon,
+                                show_prod_shot=show_prod_shot_wagon
+                            )
+                        st.pyplot(fig_wagon)
             with col1:
-                with col1:
-                    fig = wagon_zone_plot(
-                        df, selected_player, selected_inns, selected_bowler, filtered_runs,
-                        transparent=transparent_bg,
-                        show_title=show_title_wagon,
-                        show_total=show_total_wagon,
-                        show_fours_sixes=show_fours_sixes_wagon,
-                        show_control=show_control_wagon,
-                        show_prod_shot=show_prod_shot_wagon
-                    )
-                    st.pyplot(fig)
-                # st.pyplot(fig)
-            with col2:
                 # Download button for plot
                 buf = BytesIO()
-                fig.savefig(buf, format="png", transparent=transparent_bg)
-                # st.download_button(
-                #     label="📅 Download Plot as PNG",
-                #     data=buf.getvalue(),
-                #     file_name=f"{selected_player}_innings{selected_inns}_spike_plot.png",
-                #     mime="image/png"
-                # )
-                st.download_button(
-                label="📅 Download Plot as PNG",
-                data=buf.getvalue(),
-                file_name=f"{selected_player}_innings{selected_inns}_wagon_plot.png",
-                mime="image/png",
-                key="wagon_download"
-                )
+                if fig_wagon:
+                    fig_wagon.savefig(buf, format="png", transparent=transparent_bg)
+                    st.download_button(
+                        label="📅 Download Plot as PNG",
+                        data=buf.getvalue(),
+                        file_name=f"{selected_player}_innings{selected_inns}_wagon_plot.png",
+                        mime="image/png",
+                        key="wagon_download"
+                    )
+                else:
+                    st.warning("No plot available to download (check your run filters or data).")
 
 else:
     st.info("Please upload a CSV file to begin.")
