@@ -130,7 +130,7 @@ if uploaded_file:
             with col1:
                 st.pyplot(fig)
             
-            with col3:
+            with col2:
                 # Download button for plot
                 buf = BytesIO()
                 fig.savefig(buf, format="png", transparent=transparent_bg)
@@ -171,7 +171,7 @@ if uploaded_file:
                     )
                     st.pyplot(fig)
                 # st.pyplot(fig)
-            with col3:
+            with col2:
                 # Download button for plot
                 buf = BytesIO()
                 fig.savefig(buf, format="png", transparent=transparent_bg)
