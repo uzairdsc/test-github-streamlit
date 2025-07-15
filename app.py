@@ -7,6 +7,8 @@ from io import BytesIO
 
 # 🔐 Set your custom password here
 APP_PASSWORD = "cricket2025"
+# APP_PASSWORD = st.secrets["auth"]["password"]
+# Ensure the password is set in the secrets.toml file
 
 # Session state for authentication
 if "authenticated" not in st.session_state:
@@ -46,7 +48,15 @@ if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
     # Dropdown filters
-    player_list = sorted(set(df['batsmanName'].dropna().unique()))
+    # player_list = sorted(set(df['batsmanName'].dropna().unique()))
+    # selected_player = st.selectbox("Select Player", player_list)
+
+    # First select Batting Team
+    batting_teams = sorted(df['team_bat'].dropna().unique())
+    selected_team = st.selectbox("Select Batting Team", batting_teams)
+
+    # Now show players based on selected team
+    player_list = sorted(df[df['team_bat'] == selected_team]['batsmanName'].dropna().unique())
     selected_player = st.selectbox("Select Player", player_list)
 
     innings_options = sorted(df['inningNumber'].dropna().unique())
@@ -67,7 +77,7 @@ if uploaded_file:
     )
 
     selected_runs = []
-    run_options = ['All', 0, 1, 2, 3, 4, 6]
+    run_options = ['All', 0, 1, 2, 3, 4, 5, 6]
     default_runs = ['All']  # keeps "All" selected visually
 
     # Convert to full list of values if 'All' is selected
@@ -96,35 +106,87 @@ if uploaded_file:
 
         if "Spike Plot with Stats" in plot_types:
             st.subheader("📊 Spike Plot with Stats")
-            fig = spike_plot_custom(df, selected_player, selected_inns, filtered_runs, selected_bowler, transparent=transparent_bg)
             col1, col2, col3 = st.columns([2, 2, 2])
+            with col2:
+                st.markdown("## ⚙️ Customize Plot Info")
+                show_title = st.checkbox("Show Plot Title", value=True)
+                show_legend = st.checkbox("Show Legend", value=True)
+                show_total = st.checkbox("Show Total Runs", value=True)
+                show_fours_sixes = st.checkbox("Show 4s and 6s", value=True)
+                show_control = st.checkbox("Show Control %", value=True)
+                show_prod_shot = st.checkbox("Show Productive Shot", value=True)
+            # fig = spike_plot_custom(df, selected_player, selected_inns, filtered_runs, selected_bowler, transparent=transparent_bg)
+            fig = spike_plot_custom(
+                df, selected_player, selected_inns, filtered_runs, selected_bowler,
+                transparent=transparent_bg,
+                show_title=show_title,
+                show_legend=show_legend,
+                show_total=show_total,
+                show_fours_sixes=show_fours_sixes,
+                show_control=show_control,
+                show_prod_shot=show_prod_shot
+            )
             with col1:
                 st.pyplot(fig)
-
-            # Download button for plot
-            buf = BytesIO()
-            fig.savefig(buf, format="png", transparent=transparent_bg)
-            st.download_button(
+            
+            with col3:
+                # Download button for plot
+                buf = BytesIO()
+                fig.savefig(buf, format="png", transparent=transparent_bg)
+                # st.download_button(
+                #     label="📅 Download Plot as PNG",
+                #     data=buf.getvalue(),
+                #     file_name=f"{selected_player}_innings{selected_inns}_spike_plot.png",
+                #     mime="image/png"
+                # )
+                st.download_button(
                 label="📅 Download Plot as PNG",
                 data=buf.getvalue(),
                 file_name=f"{selected_player}_innings{selected_inns}_spike_plot.png",
-                mime="image/png"
-            )
+                mime="image/png",
+                key="spike_download"
+                )
         if "Wagon Zone Plot with Stats" in plot_types:
             st.subheader("📊 Wagon Zone Plot with Stats")
             fig = wagon_zone_plot(df, selected_player, selected_inns, selected_bowler, filtered_runs, transparent=transparent_bg)
             col1, col2, col3 = st.columns([2, 2, 2])
+            with col2:
+                st.markdown("## ⚙️ Customize Plot Info")    
+                show_title_wagon = st.checkbox("Show Plot Title (Wagon)", value=True, key="wagon_title")
+                show_total_wagon = st.checkbox("Show Total Runs (Wagon)", value=True, key="wagon_total")
+                show_fours_sixes_wagon = st.checkbox("Show 4s and 6s (Wagon)", value=True, key="wagon_fs")
+                show_control_wagon = st.checkbox("Show Control % (Wagon)", value=True, key="wagon_ctrl")
+                show_prod_shot_wagon = st.checkbox("Show Productive Shot (Wagon)", value=True, key="wagon_prod")
             with col1:
-                st.pyplot(fig)
-
-            # Download button for plot
-            buf = BytesIO()
-            fig.savefig(buf, format="png", transparent=transparent_bg)
-            st.download_button(
+                with col1:
+                    fig = wagon_zone_plot(
+                        df, selected_player, selected_inns, selected_bowler, filtered_runs,
+                        transparent=transparent_bg,
+                        show_title=show_title_wagon,
+                        show_total=show_total_wagon,
+                        show_fours_sixes=show_fours_sixes_wagon,
+                        show_control=show_control_wagon,
+                        show_prod_shot=show_prod_shot_wagon
+                    )
+                    st.pyplot(fig)
+                # st.pyplot(fig)
+            with col3:
+                # Download button for plot
+                buf = BytesIO()
+                fig.savefig(buf, format="png", transparent=transparent_bg)
+                # st.download_button(
+                #     label="📅 Download Plot as PNG",
+                #     data=buf.getvalue(),
+                #     file_name=f"{selected_player}_innings{selected_inns}_spike_plot.png",
+                #     mime="image/png"
+                # )
+                st.download_button(
                 label="📅 Download Plot as PNG",
                 data=buf.getvalue(),
-                file_name=f"{selected_player}_innings{selected_inns}_spike_plot.png",
-                mime="image/png"
-            )
+                file_name=f"{selected_player}_innings{selected_inns}_wagon_plot.png",
+                mime="image/png",
+                key="wagon_download"
+                )
+
 else:
     st.info("Please upload a CSV file to begin.")
