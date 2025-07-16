@@ -22,7 +22,7 @@ def test_match_spike_runs(
         3:  '#D16FBC',   
         4:  '#0B9B67',
         5:  '#3964D0',   
-        6:  '#7A41D8',   
+        6:  '#879551',   
     }
     # Filter by match, player, and innings
     local_df = df[
