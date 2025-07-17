@@ -42,6 +42,7 @@ st.set_page_config(page_title="Cricket Wagon Wheel App", layout="wide")
 st.title("🏏 Cricket Shot Analysis Dashboard")
 
 # File uploader
+
 uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
 
 if uploaded_file:
@@ -174,6 +175,7 @@ if uploaded_file:
                 show_summary = st.checkbox("Show Runs Summary", value=True)
                 runs_count = st.checkbox("Show Runs Count", value=True)
                 show_fours_sixes = st.checkbox("Show 4s and 6s", value=True)
+                show_bowler = st.checkbox("Show Bowler", value=True)
                 show_control = st.checkbox("Show Control %", value=True)
                 show_prod_shot = st.checkbox("Show Productive Shot", value=True)
 
@@ -246,7 +248,8 @@ if uploaded_file:
                         runs_count=runs_count,
                         show_fours_sixes=show_fours_sixes,
                         show_control=show_control,
-                        show_prod_shot=show_prod_shot
+                        show_prod_shot=show_prod_shot,
+                        show_bowler=show_bowler
                     )
                     with col2:
                         st.pyplot(fig_spike)
@@ -276,6 +279,7 @@ if uploaded_file:
                 show_summary_wagon = st.checkbox("Show Runs Summary (Wagon)", value=True, key="wagon_summary")
                 runs_count_wagon = st.checkbox("Show Total Runs (Wagon)", value=True, key="wagon_total")
                 show_fours_sixes_wagon = st.checkbox("Show 4s and 6s (Wagon)", value=True, key="wagon_fs")
+                show_bowler_wagon = st.checkbox("Show Bowler (Wagon)", value=True, key="wagon_bowler")
                 show_control_wagon = st.checkbox("Show Control % (Wagon)", value=True, key="wagon_ctrl")
                 show_prod_shot_wagon = st.checkbox("Show Productive Shot (Wagon)", value=True, key="wagon_prod")
             with col3:
@@ -334,7 +338,8 @@ if uploaded_file:
                             runs_count=runs_count_wagon,
                             show_fours_sixes=show_fours_sixes_wagon,
                             show_control=show_control_wagon,
-                            show_prod_shot=show_prod_shot_wagon
+                            show_prod_shot=show_prod_shot_wagon,
+                            show_bowler=show_bowler_wagon,
                         )
                         st.pyplot(fig_wagon)
             with col1:
