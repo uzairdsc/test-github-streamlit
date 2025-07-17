@@ -48,6 +48,29 @@ uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
+    # 🔧 FIXED: Compute static filters first
+    test_nums = sorted(df['TestNum'].dropna().unique())
+    batting_teams = sorted(df['team_bat'].dropna().unique())
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        selected_test_num = st.selectbox("Select Test Match Number", test_nums)
+        selected_team = st.selectbox("Select Batting Team", batting_teams)
+
+    # 🔧 FIXED: Now compute dependent filters
+    player_list = sorted(df[df['team_bat'] == selected_team]['batsmanName'].dropna().unique())
+    innings_options = sorted(
+        df[(df['team_bat'] == selected_team) & (df['TestNum'] == selected_test_num)]
+        ['inningNumber'].dropna().unique()
+    )
+    bowler_list = sorted(df[df['team_bowl'] != selected_team]['bowlerName'].dropna().unique())
+
+    with col2:
+        selected_inns = st.selectbox("Select Innings", innings_options)
+        selected_player = st.selectbox("Select Player", player_list)
+        selected_bowler = st.selectbox("Select Bowler", ['All'] + bowler_list)
+
     # Dropdown filters
     # player_list = sorted(set(df['batsmanName'].dropna().unique()))
     # selected_player = st.selectbox("Select Player", player_list)
@@ -214,7 +237,10 @@ if uploaded_file:
                     st.warning("Please select at least one run value to display the plot.")
                 else:
                     fig_spike = spike_plot_custom(
-                        df, selected_player, selected_inns, filtered_runs_spike, selected_bowler,
+                        df, selected_player, selected_inns, 
+                        test_num=selected_test_num,
+                        run_values=filtered_runs_spike,
+                        bowler_name=None if selected_bowler == "All" else selected_bowler,
                         transparent=transparent_bg,
                         show_title=show_title,
                         show_summary=show_summary,
@@ -300,15 +326,21 @@ if uploaded_file:
                 else:
                     with col2:
                         fig_wagon = wagon_zone_plot(
-                                df, selected_player, selected_inns, selected_bowler, filtered_runs_wagon,
-                                transparent=transparent_bg,
-                                show_title=show_title_wagon,
-                                show_summary=show_summary_wagon,
-                                runs_count=runs_count_wagon,
-                                show_fours_sixes=show_fours_sixes_wagon,
-                                show_control=show_control_wagon,
-                                show_prod_shot=show_prod_shot_wagon
-                            )
+                            df=df,
+                            player_name=selected_player,
+                            inns=selected_inns,
+                            test_num=selected_test_num,
+                            bowler_name=None if selected_bowler == "All" else selected_bowler,
+                            run_values=filtered_runs_wagon,
+                            transparent=transparent_bg,
+                            show_title=show_title_wagon,
+                            show_summary=show_summary_wagon,
+                            runs_count=runs_count_wagon,
+                            show_fours_sixes=show_fours_sixes_wagon,
+                            show_control=show_control_wagon,
+                            show_prod_shot=show_prod_shot_wagon,
+                            show_bowler=show_bowler_wagon,
+                        )
                         st.pyplot(fig_wagon)
             with col1:
                 # Download button for plot
