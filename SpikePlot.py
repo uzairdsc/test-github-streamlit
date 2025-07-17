@@ -9,25 +9,34 @@ import matplotlib.image as mpimg
 
 # def test_match_spike_runs(df, player_name, inns, run_values=None, bowler_name=None, transparent=False):
 def test_match_spike_runs(
-    df, player_name, inns, run_values=None, bowler_name=None, transparent=False,
+    df, player_name,  inns,test_num = None, run_values=None, bowler_name=None, transparent=False,
     show_title=True, show_legend=True, show_summary=True,
     show_fours_sixes=True, show_control=True, show_prod_shot=True, runs_count=True
 ):
-
     score_colors = {
         # 0:  '#F70000',   
         0:  '#ff4d4d',   
         1:  '#8c8c8c',   
-        2:  "#240BFF",   
+        2:  '#F3E139',   
         3:  '#D16FBC',   
         4:  '#0B9B67',
         5:  '#3964D0',   
         6:  '#7A41D8',   
     }
     # Filter by match, player, and innings
+    # local_df = df[
+    #     (df['batsmanName'] == player_name) &
+    #     (df['TestNum']== test_num) if test_num is not None else True &
+    #     (df['inningNumber'] == inns) 
+    # ].copy()
+
     local_df = df[
-        (df['batsmanName'] == player_name) & (df['inningNumber'] == inns)
+        (df['batsmanName'] == player_name)
     ].copy()
+
+    local_df = local_df[local_df['TestNum'] == test_num]
+
+    local_df = local_df[local_df['inningNumber'] == inns]
 
     # === Total Innings Summary ===
     innings_valid_balls = local_df[local_df['wides'] == 0]
@@ -41,7 +50,6 @@ def test_match_spike_runs(
 
     # we have to calculate the team_bowl, by seeing the batsman_name and team_bats, the bowling team is the opposite of batting team
     team_bats = local_df['team_bat'].unique()[0]
-    team_bowls = local_df['team_bowl'].unique()[0]
     if team_bats == 'IND':
         team_bowl = 'ENG'
     elif team_bats == 'ENG':
@@ -90,7 +98,8 @@ def test_match_spike_runs(
     # control_pct = round((player_data['shotControl'] == 0).sum() / balls_faced_df.shape[0] * 100, 2)
     # control_pct = round((filtered_df[(filtered_df['wides'] == 0) & (filtered_df['shotControl'] == 0)].shape[0]) / balls_faced_df.shape[0] * 100, 2)
     valid_balls = local_df[local_df['wides'] == 0]
-    controlled_balls = valid_balls[valid_balls['shotControl'] == 0]
+    # controlled_balls = valid_balls[valid_balls['shotControl'] == 0]
+    controlled_balls = valid_balls[valid_balls['shotControl'] ==1]
     control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2)
     # valid_balls = df[
     #     (df['batsmanName'] == player_name) &
@@ -255,7 +264,13 @@ def test_match_spike_runs(
 
     # ax.set_title(f"{player_name} Spike Graph Wheel Innings: {inns}", fontsize=12)
     if show_title:
-        ax.set_title(f"{player_name} vs {team_bowl} - Inns: {inns}".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
+        ax.set_title(f"{player_name} vs {team_bowl} - Test {test_num}, Inns: {inns}".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
+
+    innings_valid_balls = local_df[local_df['wides'] == 0]
+    innings_runs = innings_valid_balls['batsmanRuns'].sum()
+    innings_balls = innings_valid_balls.shape[0]
+    innings_4s = innings_valid_balls['isFour'].sum()
+    innings_6s = innings_valid_balls['isSix'].sum()
 
     if show_summary:
         ax.text(180, -20, f"Total Runs: {innings_runs} ({innings_balls} balls)",
