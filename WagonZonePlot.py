@@ -10,16 +10,23 @@ from io import BytesIO
 
 # def test_match_wagon(df, player_name, inns, bowler_name=None, run_values=None,transparent=False):
 def test_match_wagon(
-    df, player_name, inns, bowler_name=None, run_values=None, transparent=False,
+    df, player_name, inns, test_num=None,bowler_name=None, run_values=None, transparent=False,
     show_title=True, show_summary=True,
     show_fours_sixes=True, show_control=True, show_prod_shot=True, runs_count=True
 ):
     
     # Filter by match, player, and innings
+    # local_df = df[
+    #     (df['batsmanName'] == player_name) &
+    #     (df['inningNumber'] == inns)
+    # ].copy()
     local_df = df[
-        (df['batsmanName'] == player_name) &
-        (df['inningNumber'] == inns)
+        (df['batsmanName'] == player_name)
     ].copy()
+
+    local_df = local_df[local_df['TestNum'] == test_num]
+
+    local_df = local_df[local_df['inningNumber'] == inns]
 
     # === Total Innings Summary ===
     innings_valid_balls = local_df[local_df['wides'] == 0]
@@ -47,7 +54,6 @@ def test_match_wagon(
     # ][['batsmanName', 'wagonX', 'wagonY', 'teamRuns', 'batsmanRuns']].dropna()
     # we have to calculate the team_bowl, by seeing the batsman_name and team_bats, the bowling team is the opposite of batting team
     team_bats = local_df['team_bat'].unique()[0]
-    team_bowls = local_df['team_bowl'].unique()[0]
     if team_bats == 'IND':
         team_bowl = 'ENG'
     elif team_bats == 'ENG':
@@ -56,6 +62,7 @@ def test_match_wagon(
     full_balls_df = df[
         (df['batsmanName'] == player_name) &
         (df['inningNumber'] == inns) &
+        (df['TestNum'] == test_num) &
         (df['wides'] == 0)
     ]
 
@@ -63,6 +70,7 @@ def test_match_wagon(
     all_shots_data = df[
         (df['batsmanName'] == player_name) &
         (df['inningNumber'] == inns) &
+        (df['TestNum'] == test_num) &
         ~((df['wagonX'] == 0) & (df['wagonY'] == 0))
     ][['wagonX', 'wagonY', 'teamRuns', 'batsmanRuns', 'isFour', 'isSix', 'shotControl', 'shotType']].dropna()
 
@@ -107,7 +115,7 @@ def test_match_wagon(
     total_6s = int(player_data['isSix'].sum())
     # control_pct = round((local_df[(local_df['wides'] == 0) & (local_df['shotControl'] == 0)].shape[0]) / balls_faced_df.shape[0] * 100, 2)
     control_pct = round(
-        (full_balls_df[full_balls_df['shotControl'] == 0].shape[0]) / full_balls_df.shape[0] * 100, 2
+        (full_balls_df[full_balls_df['shotControl'] == 1].shape[0]) / full_balls_df.shape[0] * 100, 2
     )
 
     # Most productive shot
@@ -256,7 +264,8 @@ def test_match_wagon(
     # if show_title:   
     #     ax.set_title(f"{player_name} Wagon Wheel Innings: {inns}", fontsize=12)
     if show_title:
-        ax.set_title(f"{player_name} vs {team_bowl} - Inns: {inns}".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
+        ax.set_title(f"{player_name} vs {team_bowl} - Test {test_num}, Inns: {inns}".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
+
 
     if show_summary:
         ax.text(180, -40, f"Total Runs: {innings_runs} ({innings_balls} balls)",
