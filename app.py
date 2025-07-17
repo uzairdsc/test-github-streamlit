@@ -5,7 +5,7 @@ import matplotlib.patches as mpatches
 import numpy as np
 from io import BytesIO
 
-# 🔐 Set your custom password here
+# Set your custom password here
 APP_PASSWORD = "cricket2025"
 # APP_PASSWORD = st.secrets["auth"]["password"]
 # Ensure the password is set in the secrets.toml file
@@ -47,29 +47,80 @@ uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
+    # 🔧 FIXED: Compute static filters first
+    test_nums = sorted(df['TestNum'].dropna().unique())
+    batting_teams = sorted(df['team_bat'].dropna().unique())
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        selected_test_num = st.selectbox("Select Test Match Number", test_nums)
+        selected_team = st.selectbox("Select Batting Team", batting_teams)
+
+    # 🔧 FIXED: Now compute dependent filters
+    player_list = sorted(df[df['team_bat'] == selected_team]['batsmanName'].dropna().unique())
+    innings_options = sorted(
+        df[(df['team_bat'] == selected_team) & (df['TestNum'] == selected_test_num)]
+        ['inningNumber'].dropna().unique()
+    )
+    bowler_list = sorted(df[df['team_bowl'] != selected_team]['bowlerName'].dropna().unique())
+
+    with col2:
+        selected_inns = st.selectbox("Select Innings", innings_options)
+        selected_player = st.selectbox("Select Player", player_list)
+        selected_bowler = st.selectbox("Select Bowler", [None] + bowler_list)
+
     # Dropdown filters
     # player_list = sorted(set(df['batsmanName'].dropna().unique()))
     # selected_player = st.selectbox("Select Player", player_list)
 
+    # select test match
+    # test_nums = sorted(df['TestNum'].dropna().unique())
+    # selected_test_num = st.selectbox("Select Test Match Number", test_nums)
+    # test_nums = sorted(df['TestNum'].dropna().unique())
+    # test_num_options = ["All"] + [str(num) for num in test_nums]  # keep all as string
+
+    # selected_test_str = st.selectbox("Select Test Match Number", test_num_options)
+    # selected_test_num = None if selected_test_str == "All" else int(selected_test_str)
+
+
     # First select Batting Team
-    batting_teams = sorted(df['team_bat'].dropna().unique())
-    selected_team = st.selectbox("Select Batting Team", batting_teams)
+    # batting_teams = sorted(df['team_bat'].dropna().unique())
+    # selected_team = st.selectbox("Select Batting Team", batting_teams)
 
     # Now show players based on selected team
-    player_list = sorted(df[df['team_bat'] == selected_team]['batsmanName'].dropna().unique())
-    selected_player = st.selectbox("Select Player", player_list)
+    # player_list = sorted(df[df['team_bat'] == selected_team]['batsmanName'].dropna().unique())
+    # selected_player = st.selectbox("Select Player", player_list)
 
     # we will sort the innings when team bat is selected_team
-    innings_options = sorted(df[df['team_bat'] == selected_team]['inningNumber'].dropna().unique())
+    # innings_options = sorted(df[df['team_bat'] == selected_team]['inningNumber'].dropna().unique())
     # innings_options = sorted(df['inningNumber'].dropna().unique())
-    selected_inns = st.selectbox("Select Innings", innings_options)
+    # innings_options = sorted(
+    #     df[(df['team_bat'] == selected_team) & (df['TestNum'] == selected_test_num)]
+    #     ['inningNumber'].dropna().unique()
+    # )
+    # if selected_test_num is None:
+    #     innings_options = sorted(
+    #         df[df['team_bat'] == selected_team]['inningNumber'].dropna().unique()
+    #     )
+    # else:
+    #     innings_options = sorted(
+    #         df[(df['team_bat'] == selected_team) & (df['TestNum'] == selected_test_num)]
+    #         ['inningNumber'].dropna().unique()
+    #     )
+    # innings_options = ["All"] + innings_options
+    # selected_inns = st.selectbox("Select Innings", innings_options)
 
     # bowler_list = sorted(df['bowlerName'].dropna().unique())
     # Only include bowlers from the opposition team (not batting team)
-    bowler_list = sorted(
-        df[df['team_bowl'] != selected_team]['bowlerName'].dropna().unique()
-    )
-    selected_bowler = st.selectbox("Select Bowler", [None] + bowler_list)
+    # bowler_list = sorted(
+    #     df[df['team_bowl'] != selected_team]['bowlerName'].dropna().unique()
+    # )
+    # selected_bowler = st.selectbox("Select Bowler", [None] + bowler_list)
+
+    # colum1, colum2= st.columns(2)
+    # with colum1:
+
 
     st.markdown("**Select Plot Types to Display:**")
     plot_types = st.multiselect(
@@ -81,6 +132,7 @@ if uploaded_file:
             "Wagon Zone Plot with Stats"
         ]
     )
+
 
     # selected_runs = []
     # run_options = ['All', 0, 1, 2, 3, 4, 5, 6]
@@ -183,7 +235,10 @@ if uploaded_file:
                     st.warning("Please select at least one run value to display the plot.")
                 else:
                     fig_spike = spike_plot_custom(
-                        df, selected_player, selected_inns, filtered_runs_spike, selected_bowler,
+                        df, selected_player, selected_inns, 
+                        test_num=selected_test_num,
+                        run_values=filtered_runs_spike,
+                        bowler_name=selected_bowler,
                         transparent=transparent_bg,
                         show_title=show_title,
                         show_summary=show_summary,
@@ -267,15 +322,20 @@ if uploaded_file:
                 else:
                     with col2:
                         fig_wagon = wagon_zone_plot(
-                                df, selected_player, selected_inns, selected_bowler, filtered_runs_wagon,
-                                transparent=transparent_bg,
-                                show_title=show_title_wagon,
-                                show_summary=show_summary_wagon,
-                                runs_count=runs_count_wagon,
-                                show_fours_sixes=show_fours_sixes_wagon,
-                                show_control=show_control_wagon,
-                                show_prod_shot=show_prod_shot_wagon
-                            )
+                            df=df,
+                            player_name=selected_player,
+                            inns=selected_inns,
+                            test_num=selected_test_num,
+                            bowler_name=selected_bowler,
+                            run_values=filtered_runs_wagon,
+                            transparent=transparent_bg,
+                            show_title=show_title_wagon,
+                            show_summary=show_summary_wagon,
+                            runs_count=runs_count_wagon,
+                            show_fours_sixes=show_fours_sixes_wagon,
+                            show_control=show_control_wagon,
+                            show_prod_shot=show_prod_shot_wagon
+                        )
                         st.pyplot(fig_wagon)
             with col1:
                 # Download button for plot
