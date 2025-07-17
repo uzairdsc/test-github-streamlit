@@ -11,16 +11,26 @@ import matplotlib.image as mpimg
 def test_match_spike_runs(
     df, player_name,  inns,test_num = None, run_values=None, bowler_name=None, transparent=False,
     show_title=True, show_legend=True, show_summary=True,
-    show_fours_sixes=True, show_control=True, show_prod_shot=True, runs_count=True, show_bowler=None
+    show_fours_sixes=True, show_control=True, show_prod_shot=True, runs_count=True, show_bowler=None, show_ground=None
 ):
+    # score_colors = {
+    #     # 0:  '#F70000',   
+    #     0:  '#8B0000',   
+    #     1:  "#FFA500",   
+    #     # 1:  "#ede4e4",   
+    #     2:  '#4169E1',   
+    #     3:  '#008080',   
+    #     4:  '#7CFC00',
+    #     5:  '#FF00FF',   
+    #     6:  '#FFBF00',   
+    # }
     score_colors = {
-        # 0:  '#F70000',   
-        0:  '#ff4d4d',   
-        1:  '#8c8c8c',   
-        2:  '#F3E139',   
+        0:  "#706B6C",   
+        1:  "#FF5733",   
+        2:  '#1F51FF',   
         3:  '#D16FBC',   
         4:  '#0B9B67',
-        5:  '#3964D0',   
+        5:  '#FFA500',   
         6:  '#7A41D8',   
     }
     # Filter by match, player, and innings
@@ -112,7 +122,7 @@ def test_match_spike_runs(
 
     # control_pct = round((valid_balls['shotControl'] == 1).sum() / valid_balls.shape[0] * 100, 2)
 
-    total_runs_count = player_data['batsmanRuns'].sum() if runs_count else None
+    # total_runs_count = player_data['batsmanRuns'].sum() if runs_count else None
     # Most productive shot calculation
     if 'shotType' in all_shots_data.columns and not all_shots_data.empty:
     # if 'shotType' in player_data.columns and not player_data.empty:
@@ -160,7 +170,7 @@ def test_match_spike_runs(
     center_x, center_y = 180, 164
 
      # Add background image
-    if not transparent:
+    if not transparent and show_ground:
         bg_img = mpimg.imread("ground_high_res.png")  # Make sure this path is correct
         ax.imshow(bg_img, extent=[0, 360, 20, 360], aspect='auto', zorder=0)
 
@@ -211,7 +221,7 @@ def test_match_spike_runs(
 
     # plot the point (dot) at batter position which is at 180, 164, not rectangle only dot
     #batter position dot
-    batter_dot = plt.Circle((center_x, center_y), radius=3, edgecolor='black', facecolor='green', linewidth=1, zorder=2)
+    batter_dot = plt.Circle((center_x, center_y), radius=1.2, edgecolor='black', facecolor='green', linewidth=0.2, zorder=2)
     ax.add_artist(batter_dot)
     
     
@@ -313,7 +323,7 @@ def test_match_spike_runs(
 
     # Legend
     legend_elements = [
-        mpatches.Patch(color=color, label=f'{score} run' + ('s' if score != 1 else ''))
+        mpatches.Patch(color=color, label=f'{score}\'s')
         for score, color in score_colors.items() if run_values is None or score in run_values
     ]
 
