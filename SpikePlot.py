@@ -11,7 +11,7 @@ import matplotlib.image as mpimg
 def test_match_spike_runs(
     df, player_name,  inns,test_num = None, run_values=None, bowler_name=None, transparent=False,
     show_title=True, show_legend=True, show_summary=True,
-    show_fours_sixes=True, show_control=True, show_prod_shot=True, runs_count=True
+    show_fours_sixes=True, show_control=True, show_prod_shot=True, runs_count=True, show_bowler=None
 ):
     score_colors = {
         # 0:  '#F70000',   
@@ -284,6 +284,12 @@ def test_match_spike_runs(
     if show_fours_sixes:
         ax.text(180, 388, f"4s: {total_4s} | 6s: {total_6s}",
                 fontsize=11, ha='center', color='darkgreen')
+    if show_bowler:
+        if bowler_name is None:
+            bowler_name = 'All'
+        if bowler_name:
+            ax.text(180, 405, f"vs {bowler_name}",
+                    fontsize=11, ha='center', color='blue', fontweight='bold')
 
     if show_control:
         ax.text(10, 330, f"Control: {control_pct}%",
