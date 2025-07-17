@@ -178,6 +178,7 @@ if uploaded_file:
                 show_bowler = st.checkbox("Show Bowler", value=True)
                 show_control = st.checkbox("Show Control %", value=True)
                 show_prod_shot = st.checkbox("Show Productive Shot", value=True)
+                show_ground = st.checkbox("Show Ground Image", value=True)
 
 
                 # transparent_bg = st.checkbox("Transparent Background for Plots", value=False)
@@ -249,7 +250,8 @@ if uploaded_file:
                         show_fours_sixes=show_fours_sixes,
                         show_control=show_control,
                         show_prod_shot=show_prod_shot,
-                        show_bowler=show_bowler
+                        show_bowler=show_bowler,
+                        show_ground=show_ground
                     )
                     with col2:
                         st.pyplot(fig_spike)
