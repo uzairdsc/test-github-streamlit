@@ -9,9 +9,11 @@ import matplotlib.image as mpimg
 
 # def test_match_spike_runs(df, player_name, inns, run_values=None, bowler_name=None, transparent=False):
 def test_match_spike_runs(
-    df, player_name,  inns,test_num = None, run_values=None, bowler_name=None, transparent=False,
+    df, player_name=None,  inns=None,test_num = None, team_bat=None,
+    run_values=None, bowler_name=None, transparent=False,
     show_title=True, show_legend=True, show_summary=True,
-    show_fours_sixes=True, show_control=True, show_prod_shot=True, runs_count=True, show_bowler=None, show_ground=None
+    show_fours_sixes=True, show_control=True, show_prod_shot=True, 
+    runs_count=True, show_bowler=True, show_ground=True
 ):
     # score_colors = {
     #     # 0:  '#F70000',   
@@ -40,30 +42,64 @@ def test_match_spike_runs(
     #     (df['inningNumber'] == inns) 
     # ].copy()
 
-    local_df = df[
-        (df['batsmanName'] == player_name)
-    ].copy()
+    if player_name is not None:
+        local_df = df[
+            (df['batsmanName'] == player_name)
+        ].copy()
+    else:
+        local_df = df.copy()
 
-    local_df = local_df[local_df['TestNum'] == test_num]
+    if test_num is not None:
+        local_df = local_df[local_df['TestNum'] == test_num]
 
-    local_df = local_df[local_df['inningNumber'] == inns]
+    if inns is not None:
+        local_df = local_df[local_df['inningNumber'] == inns]
+        
+    if team_bat is not None and team_bat != "All":
+        local_df = local_df[local_df['team_bat'] == team_bat]
 
     # === Total Innings Summary ===
+    # innings_valid_balls = local_df[local_df['wides'] == 0]
+    # innings_runs = innings_valid_balls['batsmanRuns'].sum()
+    # innings_balls = innings_valid_balls.shape[0]
     innings_valid_balls = local_df[local_df['wides'] == 0]
-    innings_runs = innings_valid_balls['batsmanRuns'].sum()
+
+    if player_name is None:
+        innings_runs = innings_valid_balls['teamRuns'].sum()
+    else:
+        innings_runs = innings_valid_balls['batsmanRuns'].sum()
+
     innings_balls = innings_valid_balls.shape[0]
+    
     innings_4s = innings_valid_balls['isFour'].sum()
     innings_6s = innings_valid_balls['isSix'].sum()
+
 
     if bowler_name:
         local_df = local_df[local_df['bowlerName'] == bowler_name]
 
     # we have to calculate the team_bowl, by seeing the batsman_name and team_bats, the bowling team is the opposite of batting team
-    team_bats = local_df['team_bat'].unique()[0]
-    if team_bats == 'IND':
-        team_bowl = 'ENG'
-    elif team_bats == 'ENG':
-        team_bowl = 'IND'
+    # team_bats = local_df['team_bat'].unique()[0]
+    # if team_bats == 'IND':
+    #     team_bowl = 'ENG'
+    # elif team_bats == 'ENG':
+    #     team_bowl = 'IND'
+    # Get unique batting teams
+    batting_teams = local_df['team_bat'].dropna().unique()
+    all_teams = pd.concat([local_df['team_bat'], local_df['team_bowl']]).dropna().unique()
+
+    # Calculate bowling team based on filtered team_bat
+    if len(batting_teams) == 0:
+        team_bowl = "UNKNOWN"
+    else:
+        bowling_teams = [team for team in all_teams if team not in batting_teams]
+        if len(bowling_teams) == 1:
+            team_bowl = bowling_teams[0]
+        elif len(bowling_teams) > 1:
+            team_bowl = "/".join(sorted(set(bowling_teams)))
+        else:
+            team_bowl = "ALL TEAMS"
+
     
     # This keeps a copy of the full innings shot data (unfiltered)
     all_shots_data = local_df[
@@ -77,9 +113,11 @@ def test_match_spike_runs(
         filtered_df = local_df[local_df['batsmanRuns'].isin(run_values)]
 
     # Shots without wides (based on filtered data now)
-    balls_faced_df = filtered_df[
-        (filtered_df['wides'] == 0)
-    ][['batsmanName', 'wagonX', 'wagonY', 'teamRuns', 'batsmanRuns']].dropna()
+    # balls_faced_df = filtered_df[
+    #     (filtered_df['wides'] == 0)
+    # ][['batsmanName', 'wagonX', 'wagonY', 'teamRuns', 'batsmanRuns']].dropna()
+    balls_faced_df = filtered_df[filtered_df['wides'] == 0].dropna(subset=['wagonX', 'wagonY'])
+
 
     # Handle run_values = None to include all run types
 
@@ -91,24 +129,74 @@ def test_match_spike_runs(
     # if player_data.empty:
     #     print(f"No data found for {player_name} in this match and innings {inns} for selected runs {run_values}")
     #     return
-    if player_data.empty:
-        player_data_sorted = pd.DataFrame()  # Set to empty for drawing logic below
+    # if player_data.empty:
+    #     player_data_sorted = pd.DataFrame()  # Set to empty for drawing logic below
+    # else:
+    #     player_data_sorted = player_data.sort_values(by='batsmanRuns')
+    #     player_data['color'] = player_data['batsmanRuns'].map(score_colors).fillna('black')
+    if player_name is None:
+        innings_valid_balls = local_df.copy()  # include all for team
+        innings_runs = innings_valid_balls['teamRuns'].sum()
     else:
-        player_data_sorted = player_data.sort_values(by='batsmanRuns')
-        player_data['color'] = player_data['batsmanRuns'].map(score_colors).fillna('black')
+        innings_valid_balls = local_df[local_df['wides'] == 0]
+        innings_runs = innings_valid_balls['batsmanRuns'].sum()
+
+    innings_balls = innings_valid_balls[innings_valid_balls['wides'] == 0].shape[0]  # consistent valid balls
 
 
     # === Additional Stats ===
-    total_4s = player_data['isFour'].sum()
-    total_6s = player_data['isSix'].sum()
     # control_pct = round(player_data['shotControl'].mean() * 100, 2)
     # control_pct = round((player_data['shotControl'] == 0).sum() / balls_faced_df.shape[0] * 100, 2)
     # control_pct = round((filtered_df[(filtered_df['wides'] == 0) & (filtered_df['shotControl'] == 0)].shape[0]) / balls_faced_df.shape[0] * 100, 2)
     # control_pct = round(player_data['shotControl'].mean() * 100, 2)
     # control_pct = round((player_data['shotControl'] == 0).sum() / balls_faced_df.shape[0] * 100, 2)
     # control_pct = round((filtered_df[(filtered_df['wides'] == 0) & (filtered_df['shotControl'] == 0)].shape[0]) / balls_faced_df.shape[0] * 100, 2)
-    valid_balls = local_df[local_df['wides'] == 0]
     # controlled_balls = valid_balls[valid_balls['shotControl'] == 0]
+    # valid_balls = local_df[local_df['wides'] == 0]
+    # total_4s = player_data['isFour'].sum()
+    # total_6s = player_data['isSix'].sum()
+
+    # valid_balls = local_df[(local_df['wides'] == 0) & (~local_df['shotControl'].isna())]
+    # if player_name is None:
+    # # Team-level stats
+    #     valid_balls = local_df[local_df['wides']==0]
+    #     total_score = valid_balls['teamRuns'].sum()
+    #     total_4s = valid_balls['isFour'].sum()
+    #     total_6s = valid_balls['isSix'].sum()
+    #     balls_faced = valid_balls.shape[0]
+    # else:
+    #     # Player-level stats
+    #     valid_balls = local_df[(local_df['wides'] == 0) & (~local_df['shotControl'].isna())]
+    #     total_score = player_data['batsmanRuns'].sum()
+    #     total_4s = player_data['isFour'].sum()
+    #     total_6s = player_data['isSix'].sum()
+    #     balls_faced = balls_faced_df.shape[0]
+
+    # Final unified stats calculation
+    if player_name is None:
+        # Team-level stats (exclude wides only)
+        valid_balls = local_df[local_df['wides'] == 0]
+        valid_shots = valid_balls[~((valid_balls['wagonX'] == 0) & (valid_balls['wagonY'] == 0))]
+        
+        total_score = valid_shots['teamRuns'].sum()
+        total_4s = valid_shots['isFour'].sum()
+        total_6s = valid_shots['isSix'].sum()
+        balls_faced = valid_balls.shape[0]
+    else:
+        # Player-level stats (exclude wides + keep only player's shots)
+        valid_balls = local_df[(local_df['wides'] == 0) & (~local_df['shotControl'].isna())]
+        valid_shots = player_data  # already filtered with shot data
+        total_score = valid_shots['batsmanRuns'].sum()
+        total_4s = valid_shots['isFour'].sum()
+        total_6s = valid_shots['isSix'].sum()
+        balls_faced = balls_faced_df.shape[0]
+
+    # if len(valid_balls) == 0:
+    #     control_pct = 0.0
+    # else:
+    #     controlled_balls = valid_balls[valid_balls['shotControl'] == 1]
+    #     control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2)
+
     controlled_balls = valid_balls[valid_balls['shotControl'] ==1]
     control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2)
     # valid_balls = df[
@@ -126,17 +214,25 @@ def test_match_spike_runs(
     # Most productive shot calculation
     if 'shotType' in all_shots_data.columns and not all_shots_data.empty:
     # if 'shotType' in player_data.columns and not player_data.empty:
+        # shot_summary = all_shots_data.groupby('shotType').agg({
+        #     'batsmanRuns': 'sum',
+        #     'isFour': 'sum',
+        #     'isSix': 'sum'
+        # }).sort_values(by='batsmanRuns', ascending=False)
+        run_col = 'teamRuns' if player_name is None else 'batsmanRuns'
+
         shot_summary = all_shots_data.groupby('shotType').agg({
-            'batsmanRuns': 'sum',
+            run_col: 'sum',
             'isFour': 'sum',
             'isSix': 'sum'
-        }).sort_values(by='batsmanRuns', ascending=False)
+        }).sort_values(by=run_col, ascending=False)
 
         if not shot_summary.empty:
             top_shot = shot_summary.iloc[0]
             top_shot_type = shot_summary.index[0]
             most_prod_shot_text = (
-                f"{top_shot_type}: {int(top_shot['batsmanRuns'])} runs,\n"
+                # f"{top_shot_type}: {int(top_shot['batsmanRuns'])} runs,\n"
+                f"{top_shot_type}: {int(top_shot[run_col])} runs,\n"
                 f"4s: {int(top_shot['isFour'])}, 6s: {int(top_shot['isSix'])}"
             )
         else:
@@ -171,7 +267,8 @@ def test_match_spike_runs(
 
      # Add background image
     if not transparent and show_ground:
-        bg_img = mpimg.imread("ground_high_res.png")  # Make sure this path is correct
+        # bg_img = mpimg.imread("ground_high_res.png")
+        bg_img = mpimg.imread("Ground_Group_24.png")
         ax.imshow(bg_img, extent=[0, 360, 20, 360], aspect='auto', zorder=0)
 
     # Sort shots so 0s are drawn first, 6s last (so 6s are on top)
@@ -272,15 +369,20 @@ def test_match_spike_runs(
     ax.set_xticklabels([]), ax.set_yticklabels([])
     ax.set_aspect('equal', adjustable='box')
 
+    if test_num is None:
+        test_num = "All Tests"
+    if inns is None:
+        inns = "All Innings"
+    if player_name is None:
+        player_name = "All Players"
+    # if team_bats is None:
+    #     team_bowl = "All Teams"
     # ax.set_title(f"{player_name} Spike Graph Wheel Innings: {inns}", fontsize=12)
     if show_title:
-        ax.set_title(f"{player_name} vs {team_bowl} - Test {test_num}, Inns: {inns}".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
+        ax.set_title(f"{player_name} vs {team_bowl} - Test \'{test_num}\', Inns: \'{inns}\'".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
+        # ax.set_title(f"{player_name} - {team_bats} vs {team_bowl} | Test: {test_num}, Inns: {inns}".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
 
-    innings_valid_balls = local_df[local_df['wides'] == 0]
-    innings_runs = innings_valid_balls['batsmanRuns'].sum()
-    innings_balls = innings_valid_balls.shape[0]
-    innings_4s = innings_valid_balls['isFour'].sum()
-    innings_6s = innings_valid_balls['isSix'].sum()
+
 
     if show_summary:
         ax.text(180, -20, f"Total Runs: {innings_runs} ({innings_balls} balls)",
@@ -289,8 +391,16 @@ def test_match_spike_runs(
                 fontsize=11, ha='center', color='darkgreen')
     
     if runs_count:
-        ax.text(180, 375, f"{total_score} ({balls_faced_df.shape[0]} balls)",
+        ax.text(180, 375, f"{total_score} ({balls_faced} balls)",
                 fontsize=11, ha='center', fontweight='bold')
+    # if runs_count:
+    #     if player_name is None:
+    #         ax.text(180, 375, f"{innings_runs} ({innings_balls} balls)",
+    #                 fontsize=11, ha='center', fontweight='bold')
+    #     else:
+    #         ax.text(180, 375, f"{total_score} ({balls_faced} balls)",
+    #                 fontsize=11, ha='center', fontweight='bold')
+
     if show_fours_sixes:
         ax.text(180, 388, f"4s: {total_4s} | 6s: {total_6s}",
                 fontsize=11, ha='center', color='darkgreen')
@@ -302,7 +412,7 @@ def test_match_spike_runs(
                     fontsize=11, ha='center', color='blue', fontweight='bold')
 
     if show_control:
-        ax.text(10, 330, f"Control: {control_pct}%",
+        ax.text(10, 340, f"Control: {control_pct}%",
                 fontsize=12, ha='center', color='purple', fontweight='bold')
 
     if show_prod_shot:
@@ -323,7 +433,7 @@ def test_match_spike_runs(
 
     # Legend
     legend_elements = [
-        mpatches.Patch(color=color, label=f'{score}\'s')
+        mpatches.Patch(color=color, label=f'{score} \'s')
         for score, color in score_colors.items() if run_values is None or score in run_values
     ]
 
