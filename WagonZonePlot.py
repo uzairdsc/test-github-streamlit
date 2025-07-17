@@ -287,7 +287,7 @@ def test_match_wagon(
         
     if show_bowler:
         if bowler_name is None:
-            bowler_name = 'All'
+            bowler_name = 'All Bowlers'
         if bowler_name:
             ax.text(180, 405, f"vs {bowler_name}",
                     fontsize=11, ha='center', color='blue', fontweight='bold')
