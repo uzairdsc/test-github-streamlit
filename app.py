@@ -49,27 +49,63 @@ if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
     # 🔧 FIXED: Compute static filters first
+    # test_nums = sorted(df['TestNum'].dropna().unique())
     test_nums = sorted(df['TestNum'].dropna().unique())
+    test_num_options = ["All"] + [str(num) for num in test_nums]
     batting_teams = sorted(df['team_bat'].dropna().unique())
 
     col1, col2 = st.columns(2)
 
     with col1:
-        selected_test_num = st.selectbox("Select Test Match Number", test_nums)
-        selected_team = st.selectbox("Select Batting Team", batting_teams)
+        selected_test_str = st.selectbox("Select Test Match Number", test_num_options,index=0)
+        selected_test_num = None if selected_test_str == "All" else int(selected_test_str)        
+        # selected_team = st.selectbox("Select Batting Team", batting_teams)    
+        batting_teams = sorted(df['team_bat'].dropna().unique())
+        team_bat_options = ["All"] + batting_teams
+        selected_team = st.selectbox("Select Batting Team", team_bat_options, index=0)
+        selected_team = None if selected_team == "All" else selected_team
 
     # 🔧 FIXED: Now compute dependent filters
-    player_list = sorted(df[df['team_bat'] == selected_team]['batsmanName'].dropna().unique())
-    innings_options = sorted(
-        df[(df['team_bat'] == selected_team) & (df['TestNum'] == selected_test_num)]
-        ['inningNumber'].dropna().unique()
-    )
-    bowler_list = sorted(df[df['team_bowl'] != selected_team]['bowlerName'].dropna().unique())
+    # player_list = sorted(df[df['team_bat'] == selected_team]['batsmanName'].dropna().unique())
+    if selected_team:
+        player_list = sorted(df[df['team_bat'] == selected_team]['batsmanName'].dropna().unique())
+    else:
+        player_list = sorted(df['batsmanName'].dropna().unique())
+    player_list = sorted(set(player_list))
+    player_options = ["All"] + player_list
+    # innings_options = sorted(
+    #     df[(df['team_bat'] == selected_team) & (df['TestNum'] == selected_test_num)]
+    #     ['inningNumber'].dropna().unique()
+    # )
+    if selected_team and selected_test_num:
+        inns = df[(df['team_bat'] == selected_team) & (df['TestNum'] == selected_test_num)]['inningNumber']
+    elif selected_team:
+        inns = df[df['team_bat'] == selected_team]['inningNumber']
+    elif selected_test_num:
+        inns = df[df['TestNum'] == selected_test_num]['inningNumber']
+    else:
+        inns = df['inningNumber']
+
+    innings_options = sorted(inns.dropna().unique())
+    innings_display = ["All"] + [str(i) for i in innings_options]
+
+    # bowler_list = sorted(df[df['team_bowl'] != selected_team]['bowlerName'].dropna().unique())
+    if selected_team:
+        bowler_list = sorted(df[df['team_bowl'] != selected_team]['bowlerName'].dropna().unique())
+    else:
+        bowler_list = sorted(df['bowlerName'].dropna().unique())
 
     with col2:
-        selected_inns = st.selectbox("Select Innings", innings_options)
-        selected_player = st.selectbox("Select Player", player_list)
-        selected_bowler = st.selectbox("Select Bowler", ['All'] + bowler_list)
+        # selected_inns = st.selectbox("Select Innings", ['All'] + innings_options,default='All')
+        selected_inns_str = st.selectbox("Select Innings", innings_display, index=0)
+        selected_inns = None if selected_inns_str == "All" else int(selected_inns_str)
+        # selected_player = st.selectbox("Select Player", ['All'] + player_list, default='All')
+        selected_player = st.selectbox("Select Player", player_options)
+        selected_player = None if selected_player == "All" else selected_player
+
+        selected_bowler = st.selectbox("Select Bowler", ['All'] + bowler_list,index=0)
+        bowler_name = None if selected_bowler == "All" else selected_bowler
+
 
     # Dropdown filters
     # player_list = sorted(set(df['batsmanName'].dropna().unique()))
@@ -180,7 +216,6 @@ if uploaded_file:
                 show_prod_shot = st.checkbox("Show Productive Shot", value=True)
                 show_ground = st.checkbox("Show Ground Image", value=True)
 
-
                 # transparent_bg = st.checkbox("Transparent Background for Plots", value=False)
             # with col3:
             #     st.markdown("## 🌟 Filter Runs")
@@ -237,9 +272,28 @@ if uploaded_file:
                 if filtered_runs_spike == []:
                     st.warning("Please select at least one run value to display the plot.")
                 else:
+                    # fig_spike = spike_plot_custom(
+                    #     df, selected_player, selected_inns=selected_inns,
+                    #     test_num=selected_test_num,
+                    #     run_values=filtered_runs_spike,
+                    #     bowler_name=bowler_name,
+                    #     transparent=transparent_bg,
+                    #     show_title=show_title,
+                    #     show_summary=show_summary,
+                    #     show_legend=show_legend,
+                    #     runs_count=runs_count,
+                    #     show_fours_sixes=show_fours_sixes,
+                    #     show_control=show_control,
+                    #     show_prod_shot=show_prod_shot,
+                    #     show_bowler=show_bowler,
+                    #     show_ground=show_ground
+                    # )
                     fig_spike = spike_plot_custom(
-                        df, selected_player, selected_inns, 
+                        df=df,
+                        player_name=selected_player,
+                        inns=selected_inns,
                         test_num=selected_test_num,
+                        team_bat=selected_team,
                         run_values=filtered_runs_spike,
                         bowler_name=None if selected_bowler == "All" else selected_bowler,
                         transparent=transparent_bg,
