@@ -100,6 +100,7 @@ def test_match_wagon(
         1: '#00C853',
         2: '#2979FF',
         3: '#FF9100',
+        5: '#F3E139',
         4: '#D50000',
         6: '#AA00FF'
     }
@@ -194,7 +195,7 @@ def test_match_wagon(
     top_quadrants = sorted(range(8), key=lambda i: quadrant_totals[i], reverse=True)[:2]
     # rank_color = {top_quadrants[0]: 1.0, top_quadrants[1]: 0.7}
     rank_color = {top_quadrants[i]: 1.0 - i * 0.3 for i in range(len(top_quadrants))}
-    cmap = cm.get_cmap('Blues')  # or any other you prefer
+    cmap = cm.get_cmap('Greys')  # or any other you prefer
 
     for i in range(8):
         theta1 = i * 45
@@ -225,8 +226,8 @@ def test_match_wagon(
         mid_angle = np.deg2rad(theta1 + 22.5)
         label_x = center_x + 100 * np.cos(mid_angle)
         label_y = center_y + 100 * np.sin(mid_angle)
-        label_color = 'darkred' if i in top_quadrants else 'red'
-        ax.text(label_x, label_y, f"{quadrant_totals[i]} runs", fontsize=13, color=label_color,
+        # label_color = 'darkred' if i in top_quadrants else 'black'
+        ax.text(label_x, label_y, f"{quadrant_totals[i]} runs", fontsize=13, color='black',
                 ha='center', va='center')
 
     # # Highlight top 2 quadrants
