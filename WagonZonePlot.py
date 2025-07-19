@@ -148,13 +148,22 @@ def test_match_wagon(
     ax.set_aspect('equal', adjustable='box')
     ax.set_axis_off()
 
+    # if show_title:
+    #     title = f"{player_name if player_name else 'All Players'} vs {team_bowl}"
+    #     if test_num:
+    #         title += f" - Test {test_num}"
+    #     if inns:
+    #         title += f", Inns {inns}"
+    #     ax.set_title(title.upper(), fontsize=12, fontweight='bold', fontfamily='Segoe UI')
+    if test_num is None:
+        test_num = "All Tests"
+    if inns is None:
+        inns = "All Innings"
+    if player_name is None:
+        player_name = "All Players"
+        
     if show_title:
-        title = f"{player_name if player_name else 'All Players'} vs {team_bowl}"
-        if test_num:
-            title += f" - Test {test_num}"
-        if inns:
-            title += f", Inns {inns}"
-        ax.set_title(title.upper(), fontsize=12, fontweight='bold', fontfamily='Segoe UI')
+        ax.set_title(f"{player_name} vs {team_bowl} - Test \'{test_num}\', Inns: \'{inns}\'".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
 
     if show_summary:
         ax.text(180, -40, f"Total Runs: {innings_runs} ({innings_balls} balls)",
