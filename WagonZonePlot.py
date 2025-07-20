@@ -1,137 +1,128 @@
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
-import pandas as pd
 from matplotlib import cm
-from matplotlib.patches import Wedge  # add this at the top if not already
-from io import BytesIO
+from matplotlib.patches import Wedge
 
-### this is the working code only for testing
 def test_match_wagon(
-    df, player_name=None, inns=None, test_num=None, bowler_name=None, run_values=None,
-    transparent=False, show_title=True, show_summary=True,
+    df, player_name=None, inns=None, test_num=None, bowler_name=None,
+    run_values=None, transparent=False, show_title=True, show_summary=True,
     show_fours_sixes=True, show_control=True, show_prod_shot=True,
     runs_count=True, show_bowler=True
 ):
+    # ---- Apply Filters for Plotting ----
     local_df = df.copy()
 
     if player_name:
         local_df = local_df[local_df['batsmanName'] == player_name]
-
-    if test_num is not None:
+    if test_num:
         local_df = local_df[local_df['TestNum'] == test_num]
-
-    if inns is not None:
+    if inns:
         local_df = local_df[local_df['inningNumber'] == inns]
-
     if bowler_name:
         local_df = local_df[local_df['bowlerName'] == bowler_name]
-
     if run_values is not None:
         local_df = local_df[local_df['batsmanRuns'].isin(run_values)]
 
-    if local_df.empty:
-        print("No data found with the given filters.")
-        return
+    if player_name is None:
+        innings_valid_balls = local_df.copy()  # include all for team
+        innings_runs = innings_valid_balls['teamRuns'].sum()
+    else:
+        innings_valid_balls = local_df[local_df['wides'] == 0]
+        innings_runs = innings_valid_balls['batsmanRuns'].sum()
 
-    # Determine team_bat and team_bowl
-    team_bats = local_df['team_bat'].mode()[0]
-    team_bowl = df[df['team_bat'] != team_bats]['team_bat'].mode()[0]
+    innings_balls = innings_valid_balls[innings_valid_balls['wides'] == 0].shape[0]  # consistent valid balls
 
-    # Summary stats
-    innings_valid_balls = local_df[local_df['wides'] == 0]
-    innings_runs = innings_valid_balls['batsmanRuns'].sum()
-    innings_balls = innings_valid_balls.shape[0]
-    innings_4s = innings_valid_balls['isFour'].sum()
-    innings_6s = innings_valid_balls['isSix'].sum()
+    # --- Core Filtering Logic (Team vs Player Mode) ---
+    if player_name is None:
+        valid_balls = local_df[local_df['wides'] == 0]
+        valid_shots = valid_balls[~((valid_balls['wagonX'] == 0) & (valid_balls['wagonY'] == 0))]
 
-    # Data for productive shot and control (unfiltered control data)
-    control_df = df.copy()
-    if player_name:
-        control_df = control_df[control_df['batsmanName'] == player_name]
-    if test_num is not None:
-        control_df = control_df[control_df['TestNum'] == test_num]
-    if inns is not None:
-        control_df = control_df[control_df['inningNumber'] == inns]
-    control_df = control_df[control_df['wides'] == 0]
+        total_score = valid_shots['teamRuns'].sum()
+        total_4s = valid_shots['isFour'].sum()
+        total_6s = valid_shots['isSix'].sum()
+        balls_faced = valid_balls.shape[0]
 
-    control_pct = 0.0
-    if not control_df.empty:
         control_pct = round(
-            (control_df[control_df['shotControl'] == 1].shape[0]) / control_df.shape[0] * 100, 2
+            (valid_balls[valid_balls['shotControl'] == 1].shape[0]) / balls_faced * 100, 2
         )
 
-    all_shots_data = local_df[
-        ~((local_df['wagonX'] == 0) & (local_df['wagonY'] == 0))
-    ][['wagonX', 'wagonY', 'teamRuns', 'batsmanRuns', 'isFour', 'isSix', 'shotControl', 'shotType']].dropna()
+        shot_summary = valid_shots.groupby('shotType').agg({
+            'teamRuns': 'sum',
+            'isFour': 'sum',
+            'isSix': 'sum'
+        }).sort_values(by='teamRuns', ascending=False)
 
-    most_prod_shot_text = "No shot data"
-    if 'shotType' in all_shots_data.columns and not all_shots_data.empty:
-        shot_summary = all_shots_data.groupby('shotType').agg({
+    else:
+        valid_balls = local_df[(local_df['wides'] == 0) & (~local_df['shotControl'].isna())]
+        valid_shots = local_df[
+            ~((local_df['wagonX'] == 0) & (local_df['wagonY'] == 0))
+        ].dropna(subset=['wagonX', 'wagonY'])
+
+        total_score = valid_shots['batsmanRuns'].sum()
+        total_4s = valid_shots['isFour'].sum()
+        total_6s = valid_shots['isSix'].sum()
+        balls_faced = valid_balls.shape[0]
+
+        control_pct = round(
+            (valid_balls[valid_balls['shotControl'] == 1].shape[0]) / balls_faced * 100, 2
+        )
+
+        shot_summary = valid_shots.groupby('shotType').agg({
             'batsmanRuns': 'sum',
             'isFour': 'sum',
             'isSix': 'sum'
         }).sort_values(by='batsmanRuns', ascending=False)
 
-        if not shot_summary.empty:
-            top_shot = shot_summary.iloc[0]
-            top_shot_type = shot_summary.index[0]
-            most_prod_shot_text = (
-                f"{top_shot_type}: {int(top_shot['batsmanRuns'])} runs,\n"
-                f"4s: {int(top_shot['isFour'])}, 6s: {int(top_shot['isSix'])}"
-            )
+    # Most Productive Shot
+    if not shot_summary.empty:
+        top_shot = shot_summary.iloc[0]
+        top_shot_type = shot_summary.index[0]
+        runs_col = 'teamRuns' if player_name is None else 'batsmanRuns'
+        most_prod_shot_text = (
+            f"{top_shot_type.upper()}: {int(top_shot[runs_col])} runs,\n"
+            f"4s: {int(top_shot['isFour'])}, 6s: {int(top_shot['isSix'])}"
+        )
+    else:
+        most_prod_shot_text = "No productive shot data"
 
-    player_data = all_shots_data.copy()
-    if player_data.empty:
-        print("No shot data to plot.")
-        return
+    # Prepare data for quadrant plotting
+    score_col = 'batsmanRuns' if player_name else 'teamRuns'
+    player_data = valid_shots[['wagonX', 'wagonY', score_col, 'isFour', 'isSix']].copy()
 
-    score_colors = {
-        0: '#A9A9A9',
-        1: '#00C853',
-        2: '#2979FF',
-        3: '#FF9100',
-        4: '#D50000',
-        6: '#AA00FF'
-    }
+    center_x, center_y = 180, 164
+    def get_quadrant(x, y):
+        angle = np.arctan2(y - center_y, x - center_x)
+        degree = (np.degrees(angle) + 360) % 360
+        return int(degree // 45)
 
-    player_data['color'] = player_data['batsmanRuns'].map(score_colors).fillna('black')
+    player_data['quadrant'] = player_data.apply(lambda row: get_quadrant(row['wagonX'], row['wagonY']), axis=1)
+    quadrant_totals = [player_data[player_data['quadrant'] == q][score_col].sum() for q in range(8)]
+    total_score = sum(quadrant_totals)
 
     # Plot
     fig, ax = plt.subplots(figsize=(7, 7), facecolor='none' if transparent else 'white')
     ax.set_facecolor('none' if transparent else 'white')
-    center_x, center_y = 180, 164
 
-    # Draw boundary and pitch
+    # Draw ground and pitch
     boundary = plt.Circle((center_x, center_y), 180, color='black', fill=False, linewidth=1.2)
-    ax.add_artist(boundary)
     batter_dot = plt.Circle((center_x, center_y), radius=3, edgecolor='black', facecolor='green', zorder=2)
+    ax.add_artist(boundary)
     ax.add_artist(batter_dot)
 
-    # Quadrants
     for angle in range(0, 360, 45):
         rad = np.deg2rad(angle)
         x_end = center_x + 180 * np.cos(rad)
         y_end = center_y + 180 * np.sin(rad)
         ax.plot([center_x, x_end], [center_y, y_end], color='black', linewidth=1.3)
 
-    def get_quadrant(x, y):
-        angle = np.arctan2(y - center_y, x - center_x)
-        return int((np.degrees(angle) + 360) % 360 // 45)
-
-    player_data['quadrant'] = player_data.apply(
-        lambda row: get_quadrant(row['wagonX'], row['wagonY']), axis=1
-    )
-
-    quadrant_totals = [player_data[player_data['quadrant'] == q]['batsmanRuns'].sum() for q in range(8)]
-    total_score = sum(quadrant_totals)
+    # Highlight Top Zones
     top_quadrants = sorted(range(8), key=lambda i: quadrant_totals[i], reverse=True)[:2]
     rank_color = {top_quadrants[i]: 1.0 - i * 0.3 for i in range(len(top_quadrants))}
     cmap = cm.get_cmap('Blues')
 
     for i in range(8):
-        theta1 = i * 45
-        theta2 = theta1 + 45
+        theta1, theta2 = i * 45, (i + 1) * 45
         if i in rank_color:
             ax.add_patch(Wedge(center=(center_x, center_y), r=180, theta1=theta1, theta2=theta2,
                                color=cmap(rank_color[i]), alpha=0.3, zorder=0))
@@ -145,34 +136,41 @@ def test_match_wagon(
     ax.set_xlim(-20, 380)
     ax.set_ylim(-50, 420)
     ax.invert_yaxis()
-    ax.set_aspect('equal', adjustable='box')
+    ax.set_aspect('equal')
     ax.set_axis_off()
 
-    # if show_title:
-    #     title = f"{player_name if player_name else 'All Players'} vs {team_bowl}"
-    #     if test_num:
-    #         title += f" - Test {test_num}"
-    #     if inns:
-    #         title += f", Inns {inns}"
-    #     ax.set_title(title.upper(), fontsize=12, fontweight='bold', fontfamily='Segoe UI')
-    if test_num is None:
-        test_num = "All Tests"
-    if inns is None:
-        inns = "All Innings"
-    if player_name is None:
-        player_name = "All Players"
-        
-    if show_title:
-        ax.set_title(f"{player_name} vs {team_bowl} - Test \'{test_num}\', Inns: \'{inns}\'".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
+    # Metadata for title
+    if test_num is None: test_num = "All Tests"
+    if inns is None: inns = "All Innings"
+    if player_name is None: player_name = "All Players"
 
+    # Determine team names
+    if not local_df.empty:
+        team_bats = local_df['team_bat'].unique()
+        if len(team_bats) == 1:
+            team_bat = team_bats[0]
+            all_teams = df['team_bat'].unique().tolist() + df['team_bowl'].unique().tolist()
+            team_bowl = [t for t in set(all_teams) if t != team_bat][0] if team_bat in all_teams else "Opponent"
+        else:
+            team_bowl = "All Teams"
+    else:
+        team_bowl = "All Teams"
+
+    if show_title:
+        ax.set_title(
+            f"{player_name} vs {team_bowl} - Test '{test_num}', Inns: '{inns}'".upper(),
+            fontsize=12, fontweight='bold', fontfamily='Segoe UI'
+        )
+
+    # Text Summary
     if show_summary:
-        ax.text(180, -40, f"Total Runs: {innings_runs} ({innings_balls} balls)",
+        ax.text(180, -40, f"Total Runs: {innings_runs} ({balls_faced} balls)",
                 fontsize=11, ha='center', fontweight='bold', color='darkgreen')
-        ax.text(180, -25, f"Total 4s: {innings_4s} | 6s: {innings_6s}",
+        ax.text(180, -25, f"Total 4s: {total_4s} | 6s: {total_6s}",
                 fontsize=11, ha='center', color='darkgreen')
 
     if runs_count:
-        ax.text(180, 375, f"{total_score} ({player_data.shape[0]} balls)",
+        ax.text(180, 375, f"{total_score} ({balls_faced} balls)",
                 fontsize=11, ha='center', fontweight='bold')
 
     if show_fours_sixes:
@@ -187,10 +185,16 @@ def test_match_wagon(
         ax.text(10, 390, f"Productive Shot:\n{most_prod_shot_text}", fontsize=11,
                 ha='center', color='navy', fontweight='bold')
 
+    if show_bowler:
+        if bowler_name is None:
+            bowler_name = 'All Bowlers'
+        ax.text(180, 405, f"vs {bowler_name}", fontsize=11, ha='center',
+                color='blue', fontweight='bold')
+
     plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07)
+    # plt.show()
     plt.close(fig)
     return fig
-    # plt.show()
 
 #### this is the correct and all details previous method needs some changes only
 
