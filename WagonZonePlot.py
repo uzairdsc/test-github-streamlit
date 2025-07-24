@@ -105,7 +105,7 @@ def test_match_wagon(
     ax.set_facecolor('none' if transparent else 'white')
 
     # Draw ground and pitch
-    boundary = plt.Circle((center_x, center_y), 180, color='black', fill=False, linewidth=1.2)
+    boundary = plt.Circle((center_x, center_y), 180, color='#8c8c8c', fill=False, linewidth=1.2)
     batter_dot = plt.Circle((center_x, center_y), radius=3, edgecolor='black', facecolor='green', zorder=2)
     ax.add_artist(boundary)
     ax.add_artist(batter_dot)
@@ -114,7 +114,7 @@ def test_match_wagon(
         rad = np.deg2rad(angle)
         x_end = center_x + 180 * np.cos(rad)
         y_end = center_y + 180 * np.sin(rad)
-        ax.plot([center_x, x_end], [center_y, y_end], color='black', linewidth=1.3)
+        ax.plot([center_x, x_end], [center_y, y_end], color='#8c8c8c', linewidth=1.3)
 
     # Highlight Top Zones
     top_quadrants = sorted(range(8), key=lambda i: quadrant_totals[i], reverse=True)[:2]
@@ -130,8 +130,8 @@ def test_match_wagon(
         label_x = center_x + 100 * np.cos(mid_angle)
         label_y = center_y + 100 * np.sin(mid_angle)
         ax.text(label_x, label_y, f"{quadrant_totals[i]} runs", fontsize=13,
-                color='darkred' if i in top_quadrants else 'red',
-                ha='center', va='center')
+                color='black' if i in top_quadrants else '#000',
+                ha='center', va='center',fontweight = 'bold')
 
     ax.set_xlim(-20, 470)
     ax.set_ylim(-50, 370)
