@@ -133,8 +133,8 @@ def test_match_wagon(
                 color='darkred' if i in top_quadrants else 'red',
                 ha='center', va='center')
 
-    ax.set_xlim(-20, 380)
-    ax.set_ylim(-50, 420)
+    ax.set_xlim(-20, 470)
+    ax.set_ylim(-50, 370)
     ax.invert_yaxis()
     ax.set_aspect('equal')
     ax.set_axis_off()
@@ -164,31 +164,31 @@ def test_match_wagon(
 
     # Text Summary
     if show_summary:
-        ax.text(180, -40, f"Total Runs: {innings_runs} ({balls_faced} balls)",
+        ax.text(220, -40, f"Total Runs: {innings_runs} ({balls_faced} balls)",
                 fontsize=11, ha='center', fontweight='bold', color='darkgreen')
-        ax.text(180, -25, f"Total 4s: {total_4s} | 6s: {total_6s}",
+        ax.text(220, -25, f"Total 4s: {total_4s} | 6s: {total_6s}",
                 fontsize=11, ha='center', color='darkgreen')
 
     if runs_count:
-        ax.text(180, 375, f"{total_score} ({balls_faced} balls)",
+        ax.text(430, 140, f"{total_score} ({balls_faced} balls)",
                 fontsize=11, ha='center', fontweight='bold')
 
     if show_fours_sixes:
-        ax.text(180, 388, f"4s: {int(player_data['isFour'].sum())} | 6s: {int(player_data['isSix'].sum())}",
+        ax.text(430, 155, f"4s: {int(player_data['isFour'].sum())} | 6s: {int(player_data['isSix'].sum())}",
                 fontsize=11, ha='center', color='darkgreen')
 
     if show_control:
-        ax.text(10, 330, f"Control: {control_pct}%", fontsize=12, ha='center',
+        ax.text(430, 80, f"Control: {control_pct}%", fontsize=12, ha='center',
                 color='purple', fontweight='bold')
 
     if show_prod_shot:
-        ax.text(10, 390, f"Productive Shot:\n{most_prod_shot_text}", fontsize=11,
+        ax.text(430, 250, f"Productive Shot:\n{most_prod_shot_text}", fontsize=11,
                 ha='center', color='navy', fontweight='bold')
 
     if show_bowler:
         if bowler_name is None:
             bowler_name = 'All Bowlers'
-        ax.text(180, 405, f"vs {bowler_name}", fontsize=11, ha='center',
+        ax.text(430, 170, f"vs {bowler_name}", fontsize=11, ha='center',
                 color='blue', fontweight='bold')
 
     plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07)
