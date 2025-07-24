@@ -300,7 +300,7 @@ def test_match_spike_runs(
                 color=row['color'], linewidth=lw, alpha=0.8, zorder=1
             )
     else:
-        ax.text(180, 410, "No shots for selected run(s)", ha='center', fontsize=12, color='red', fontweight='bold')
+        ax.text(220, 410, "No shots for selected run(s)", ha='center', fontsize=12, color='red', fontweight='bold')
     # Draw lines
     # for _, row in player_data.iterrows():
     #     ax.plot([center_x, row['wagonX']], [center_y, row['wagonY']],
@@ -363,8 +363,8 @@ def test_match_spike_runs(
     #         fontsize=11, ha='center', color='purple')
     # ax.text(180, 405, f"Most Productive Shot: {most_prod_shot_text}",
     #         fontsize=11, ha='center', color='navy')
-    ax.set_xlim(-20, 380)
-    ax.set_ylim(-30, 420)
+    ax.set_xlim(-20, 470)
+    ax.set_ylim(-30, 370)
     ax.set_xticks([]), ax.set_yticks([])
     ax.set_xticklabels([]), ax.set_yticklabels([])
     ax.set_aspect('equal', adjustable='box')
@@ -385,13 +385,13 @@ def test_match_spike_runs(
 
 
     if show_summary:
-        ax.text(180, -20, f"Total Runs: {innings_runs} ({innings_balls} balls)",
+        ax.text(220, -20, f"Total Runs: {innings_runs} ({innings_balls} balls)",
                 fontsize=11, ha='center', fontweight='bold', color='darkgreen')
-        ax.text(180, -5, f"Total 4s: {innings_4s} | 6s: {innings_6s}",
+        ax.text(220, -5, f"Total 4s: {innings_4s} | 6s: {innings_6s}",
                 fontsize=11, ha='center', color='darkgreen')
     
     if runs_count:
-        ax.text(180, 375, f"{total_score} ({balls_faced} balls)",
+        ax.text(430, 140, f"{total_score} ({balls_faced} balls)",
                 fontsize=11, ha='center', fontweight='bold')
     # if runs_count:
     #     if player_name is None:
@@ -402,21 +402,21 @@ def test_match_spike_runs(
     #                 fontsize=11, ha='center', fontweight='bold')
 
     if show_fours_sixes:
-        ax.text(180, 388, f"4s: {total_4s} | 6s: {total_6s}",
+        ax.text(430, 155, f"4s: {total_4s} | 6s: {total_6s}",
                 fontsize=11, ha='center', color='darkgreen')
     if show_bowler:
         if bowler_name is None:
             bowler_name = 'All Bowlers'
         if bowler_name:
-            ax.text(180, 405, f"vs {bowler_name}",
+            ax.text(430,175, f"vs {bowler_name}",
                     fontsize=11, ha='center', color='blue', fontweight='bold')
 
     if show_control:
-        ax.text(10, 340, f"Control: {control_pct}%",
+        ax.text(430, 80, f"Control: {control_pct}%",
                 fontsize=12, ha='center', color='purple', fontweight='bold')
 
     if show_prod_shot:
-        ax.text(10, 390, f"Productive Shot:\n{most_prod_shot_text}",
+        ax.text(430, 250, f"Productive Shot:\n{most_prod_shot_text}",
                 fontsize=11, ha='center', color='navy',fontweight='bold')
 
     # ax.text(180, 375, f"Total Runs: {total_score} ({balls_faced_df.shape[0]} balls)",
@@ -440,7 +440,16 @@ def test_match_spike_runs(
     # ax.legend(handles=legend_elements, loc='upper right', fontsize=8)
     
     if show_legend:
-        ax.legend(handles=legend_elements, loc='upper right', fontsize=8)
+        # ax.legend(handles=legend_elements, loc='upper right', fontsize=8)
+        ax.legend(
+            handles=legend_elements,
+            loc='center',
+            bbox_to_anchor=(430, 300),  # (x, y) in data coordinates
+            bbox_transform=ax.transData,
+            ncol=3,
+            frameon=False,
+            fontsize=8
+        )
 
     plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07)
     plt.close(fig)
