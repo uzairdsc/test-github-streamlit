@@ -50,7 +50,8 @@ if uploaded_file:
 
     # 🔧 FIXED: Compute static filters first
     # test_nums = sorted(df['TestNum'].dropna().unique())
-    test_nums = sorted(df['TestNum'].dropna().unique())
+    # test_nums = sorted(df['TestNum'].dropna().unique())
+    test_nums = sorted(df['MatNum'].dropna().unique())
     test_num_options = ["All"] + [str(num) for num in test_nums]
     batting_teams = sorted(df['team_bat'].dropna().unique())
 
@@ -78,11 +79,11 @@ if uploaded_file:
     #     ['inningNumber'].dropna().unique()
     # )
     if selected_team and selected_test_num:
-        inns = df[(df['team_bat'] == selected_team) & (df['TestNum'] == selected_test_num)]['inningNumber']
+        inns = df[(df['team_bat'] == selected_team) & (df['MatNum'] == selected_test_num)]['inningNumber']
     elif selected_team:
         inns = df[df['team_bat'] == selected_team]['inningNumber']
     elif selected_test_num:
-        inns = df[df['TestNum'] == selected_test_num]['inningNumber']
+        inns = df[df['MatNum'] == selected_test_num]['inningNumber']
     else:
         inns = df['inningNumber']
 
