@@ -50,7 +50,8 @@ def test_match_spike_runs(
         local_df = df.copy()
 
     if test_num is not None:
-        local_df = local_df[local_df['TestNum'] == test_num]
+        # local_df = local_df[local_df['TestNum'] == test_num]
+        local_df = local_df[local_df['MatNum'] == test_num]
 
     if inns is not None:
         local_df = local_df[local_df['inningNumber'] == inns]
