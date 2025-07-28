@@ -380,7 +380,7 @@ def test_match_spike_runs(
     #     team_bowl = "All Teams"
     # ax.set_title(f"{player_name} Spike Graph Wheel Innings: {inns}", fontsize=12)
     if show_title:
-        ax.set_title(f"{player_name} vs {team_bowl} - Test \'{test_num}\', Inns: \'{inns}\'".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
+        ax.set_title(f"{player_name} vs {team_bowl} - Match \'{test_num}\', Inns: \'{inns}\'".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
         # ax.set_title(f"{player_name} - {team_bats} vs {team_bowl} | Test: {test_num}, Inns: {inns}".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
 
 
