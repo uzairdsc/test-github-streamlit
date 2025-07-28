@@ -16,7 +16,8 @@ def test_match_wagon(
     if player_name:
         local_df = local_df[local_df['batsmanName'] == player_name]
     if test_num:
-        local_df = local_df[local_df['TestNum'] == test_num]
+        local_df = local_df[local_df['MatNum'] == test_num]
+        # local_df = local_df[local_df['TestNum'] == test_num]
     if inns:
         local_df = local_df[local_df['inningNumber'] == inns]
     if bowler_name:
