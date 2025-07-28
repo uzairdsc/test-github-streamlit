@@ -159,7 +159,7 @@ def test_match_wagon(
 
     if show_title:
         ax.set_title(
-            f"{player_name} vs {team_bowl} - Test '{test_num}', Inns: '{inns}'".upper(),
+            f"{player_name} vs {team_bowl} - Match '{test_num}', Inns: '{inns}'".upper(),
             fontsize=12, fontweight='bold', fontfamily='Segoe UI'
         )
 
