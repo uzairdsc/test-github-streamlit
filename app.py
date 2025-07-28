@@ -58,7 +58,7 @@ if uploaded_file:
     col1, col2 = st.columns(2)
 
     with col1:
-        selected_test_str = st.selectbox("Select Test Match Number", test_num_options,index=0)
+        selected_test_str = st.selectbox("Select Match Number", test_num_options,index=0)
         selected_test_num = None if selected_test_str == "All" else int(selected_test_str)        
         # selected_team = st.selectbox("Select Batting Team", batting_teams)    
         batting_teams = sorted(df['team_bat'].dropna().unique())
