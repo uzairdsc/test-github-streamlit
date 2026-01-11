@@ -6,25 +6,25 @@ import numpy as np
 from io import BytesIO
 
 # Set your custom password here
-APP_PASSWORD = "cricket2025"
+# APP_PASSWORD = "cricket2025"
 # APP_PASSWORD = st.secrets["auth"]["password"]
 # Ensure the password is set in the secrets.toml file
 
-# Session state for authentication
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
+# # Session state for authentication
+# if "authenticated" not in st.session_state:
+#     st.session_state.authenticated = False
 
-if not st.session_state.authenticated:
-    st.title("🔐 Private App Login")
-    password_input = st.text_input("Enter Access Password:", type="password")
+# if not st.session_state.authenticated:
+#     st.title("🔐 Private App Login")
+#     password_input = st.text_input("Enter Access Password:", type="password")
 
-    if password_input == APP_PASSWORD:
-        st.success("Access granted.")
-        st.session_state.authenticated = True
-        st.rerun()
-    elif password_input:
-        st.error("Invalid password. Try again.")
-    st.stop()
+#     if password_input == APP_PASSWORD:
+#         st.success("Access granted.")
+#         st.session_state.authenticated = True
+#         st.rerun()
+#     elif password_input:
+#         st.error("Invalid password. Try again.")
+#     st.stop()
 
 # Import your methods here
 # from wagon_methods import (
@@ -43,7 +43,8 @@ st.title("🏏 Cricket Shot Analysis Dashboard")
 
 # File uploader
 
-uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
+# uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
+uploaded_file = "ENGvIND_Test_Series_Updated.csv"
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
@@ -416,3 +417,4 @@ if uploaded_file:
 
 else:
     st.info("Please upload a CSV file to begin.")
+
