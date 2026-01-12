@@ -34,13 +34,6 @@ from WagonUpd import wagon_zone_plot
 st.set_page_config(page_title="Cricket Wagon Wheel App", layout="wide")
 st.title("🏏 Cricket Shot Analysis Dashboard")
 
-# ===== S3 Configuration =====
-# Add these to your .streamlit/secrets.toml file:
-# [aws]
-# access_key_id = "YOUR_AWS_ACCESS_KEY"
-# secret_access_key = "YOUR_AWS_SECRET_KEY"
-# bucket_name = "YOUR_BUCKET_NAME"
-# region_name = "us-east-1"
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def load_from_s3(bucket_name, file_key, aws_access_key, aws_secret_key, region_name='us-east-1'):
@@ -69,44 +62,76 @@ def load_from_s3(bucket_name, file_key, aws_access_key, aws_secret_key, region_n
 st.sidebar.header("📂 Select Dataset Source")
 data_source = st.sidebar.selectbox(
     "Choose data source:",
-    ["Upload Local File", "ENG vs IND Test Series (Sample)", "Load from S3 (T20 Data)"]
+    ["Upload Local File", "T20 Data for 2025", "Complete T20-T20I Data"]
 )
 
-df = None
+# Initialize session state for df
+if 'df' not in st.session_state:
+    st.session_state.df = None
+
+df = st.session_state.df
 
 if data_source == "Upload Local File":
     uploaded_file = st.sidebar.file_uploader("Upload CSV File", type=["csv"])
     if uploaded_file:
-        df = pd.read_csv(uploaded_file)
-        st.sidebar.success(f"✅ Loaded {len(df)} rows")
+        df = pd.read_csv(uploaded_file, low_memory=False)
+        st.session_state.df = df
+        st.sidebar.success(f"✅ Loaded {len(df):,} rows")
 
-elif data_source == "ENG vs IND Test Series (Sample)":
-    # Load the local test series data
-    try:
-        df = pd.read_csv("data/ENGvIND_Test_Series_Updated.csv")
-        st.sidebar.success(f"✅ Loaded {len(df)} rows from sample dataset")
-    except FileNotFoundError:
-        st.sidebar.error("❌ Sample file not found. Please upload manually.")
-
-elif data_source == "Load from S3 (T20 Data)":
-    # Load credentials from secrets
+elif data_source == "T20 Data for 2025":
     if "aws" in st.secrets:
         bucket = st.secrets["aws"]["bucket_name"]
         access_key = st.secrets["aws"]["access_key_id"]
         secret_key = st.secrets["aws"]["secret_access_key"]
-        region = st.secrets["aws"].get("region_name", "us-east-1")
+        region = st.secrets["aws"].get("region_name", "ap-south-1")
         
-        # S3 file key (path in bucket)
         s3_file_key = st.sidebar.text_input(
-            "Enter S3 file path (e.g., 'data/t20_bbb.csv'):",
-            value="data/t20_bbb.csv"
+            "Enter S3 file path:",
+            value="t20_bbb_2024-25.csv"
         )
         
-        if st.sidebar.button("Load from S3"):
-            df = load_from_s3(bucket, s3_file_key, access_key, secret_key, region)
+        if st.sidebar.button("Load from S3", key="load_2025"):
+            loaded_df = load_from_s3(bucket, s3_file_key, access_key, secret_key, region)
+            if loaded_df is not None:
+                st.session_state.df = loaded_df
+                df = loaded_df
+        
+        # Show current loaded data info
+        if st.session_state.df is not None:
+            st.sidebar.info(f"📊 Current data: {len(st.session_state.df):,} rows")
     else:
         st.sidebar.warning("⚠️ AWS credentials not configured in secrets.toml")
 
+elif data_source == "Complete T20-T20I Data":
+    if "aws" in st.secrets:
+        bucket = st.secrets["aws"]["bucket_name"]
+        access_key = st.secrets["aws"]["access_key_id"]
+        secret_key = st.secrets["aws"]["secret_access_key"]
+        region = st.secrets["aws"].get("region_name", "ap-south-1")
+        
+        s3_file_key = st.sidebar.text_input(
+            "Enter S3 file path:",
+            value="t20_bbb.csv"
+        )
+        
+        if st.sidebar.button("Load from S3", key="load_complete"):
+            loaded_df = load_from_s3(bucket, s3_file_key, access_key, secret_key, region)
+            if loaded_df is not None:
+                st.session_state.df = loaded_df
+                df = loaded_df
+        
+        # Show current loaded data info
+        if st.session_state.df is not None:
+            st.sidebar.info(f"📊 Current data: {len(st.session_state.df):,} rows")
+    else:
+        st.sidebar.warning("⚠️ AWS credentials not configured in secrets.toml")
+
+# Add a clear data button
+if st.session_state.df is not None:
+    if st.sidebar.button("🗑️ Clear Loaded Data"):
+        st.session_state.df = None
+        st.rerun()
+        
 # ===== Main App Logic =====
 # if df is not None:
 #     # Update column names for generalized dataset (Himanish format)
