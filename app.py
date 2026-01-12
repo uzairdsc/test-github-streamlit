@@ -44,7 +44,7 @@ st.title("🏏 Cricket Shot Analysis Dashboard")
 # File uploader
 
 # uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
-uploaded_file = "ENGvIND_Test_Series_Updated.csv"
+uploaded_file = "data/ENGvIND_Test_Series_Updated.csv"
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
@@ -417,4 +417,5 @@ if uploaded_file:
 
 else:
     st.info("Please upload a CSV file to begin.")
+
 
