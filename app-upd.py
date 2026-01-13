@@ -48,7 +48,7 @@ def load_from_s3(bucket_name, file_key, aws_access_key, aws_secret_key, region_n
         
         with st.spinner(f"Loading data from S3: {file_key}..."):
             obj = s3_client.get_object(Bucket=bucket_name, Key=file_key)
-            df = pd.read_csv(obj['Body']), low_memory=False
+            df = pd.read_csv(obj['Body'], low_memory=False)
             st.success(f"✅ Loaded {len(df)} rows from S3")
             return df
     except NoCredentialsError:
@@ -446,4 +446,5 @@ if df is not None:
 
 else:
     st.info("Please select a dataset source to begin.")
+
 
