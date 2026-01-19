@@ -7,12 +7,24 @@ import matplotlib.image as mpimg
 
 
 def spike_graph_plot(
-    df, player_name=None,  inns=None, mat_num = None, team_bat=None,
+    df, player_name=None,  inns=None, mat_num = None, team_bat=None, team_bowl=None,
     run_values=None, bowler_name=None, competition=None, transparent=False,
+    date_from=None, date_to=None,
     show_title=True, show_legend=True, show_summary=True,
     show_fours_sixes=True, show_control=True, show_prod_shot=True, 
     runs_count=True, show_bowler=True, show_ground=True
 ):
+    # score_colors = {
+    #     # 0:  '#F70000',   
+    #     0:  '#8B0000',   
+    #     1:  "#FFA500",   
+    #     # 1:  "#ede4e4",   
+    #     2:  '#4169E1',   
+    #     3:  '#008080',   
+    #     4:  '#7CFC00',
+    #     5:  '#FF00FF',   
+    #     6:  '#FFBF00',   
+    # }
     score_colors = {
         0:  "#706B6C",   
         1:  "#FF5733",   
@@ -22,7 +34,12 @@ def spike_graph_plot(
         5:  '#FFA500',   
         6:  '#7A41D8',   
     }
-
+    # Filter by match, player, and innings
+    # local_df = df[
+    #     (df['batsmanName'] == player_name) &
+    #     (df['TestNum']== test_num) if test_num is not None else True &
+    #     (df['inningNumber'] == inns) 
+    # ].copy()
 
     if player_name is not None:
         local_df = df[
@@ -32,7 +49,6 @@ def spike_graph_plot(
         local_df = df.copy()
 
     if mat_num is not None:
-        # local_df = local_df[local_df['TestNum'] == test_num]
         local_df = local_df[local_df['p_match'] == mat_num]
 
     if inns is not None:
@@ -41,10 +57,20 @@ def spike_graph_plot(
     if team_bat is not None and team_bat != "All":
         local_df = local_df[local_df['team_bat'] == team_bat]
 
+    if team_bowl is not None and team_bowl != "All":
+        local_df = local_df[local_df['team_bowl'] == team_bowl]
+
+
     # ADD THIS:
     if competition:
         local_df = local_df[local_df['competition'] == competition]
     
+    # Date range filter
+    if date_from is not None:
+        local_df = local_df[local_df['date'] >= pd.to_datetime(date_from)]
+
+    if date_to is not None:
+        local_df = local_df[local_df['date'] <= pd.to_datetime(date_to)]
 
     # === Total Innings Summary ===
     # innings_valid_balls = local_df[local_df['wides'] == 0]
@@ -92,24 +118,27 @@ def spike_graph_plot(
     #         team_bowl = "ALL TEAMS"
 
     # Determine team names - Updated logic
+    # Determine team names - Updated logic
     if not local_df.empty:
         team_bats = local_df['team_bat'].unique() 
         if len(team_bats) == 1:
             team_bat = team_bats[0]
             # Filter by the same match to get correct opponent
-            if mat_num is not None:
+            if mat_num is not None and mat_num != "All Matches":  # ✅ ADD THIS CHECK
                 match_df = df[df['p_match'] == mat_num]
             else:
                 match_df = local_df
             
             # Get opponent from the same match
             team_bowls_in_match = match_df['team_bowl'].unique()
-            team_bowl = [t for t in team_bowls_in_match if t != team_bat][0] if len(team_bowls_in_match) > 0 else "Opponents"
-
-            if len(team_bowl) == 1:
-                team_bowl = team_bowl[0]
-            else:
+            opponents = [t for t in team_bowls_in_match if t != team_bat]  # ✅ STORE AS LIST
+            
+            if len(opponents) == 1:  # ✅ CHECK LIST LENGTH
+                team_bowl = opponents[0]
+            elif len(opponents) > 1:  # ✅ MULTIPLE OPPONENTS
                 team_bowl = "All Teams"
+            else:
+                team_bowl = "Opponents"
         else:
             team_bowl = "All Teams"
     else:
@@ -299,7 +328,7 @@ def spike_graph_plot(
      # Add background image
     if not transparent and show_ground:
         # bg_img = mpimg.imread("ground_high_res.png")
-        bg_img = mpimg.imread("Ground_Group_24.png")
+        bg_img = mpimg.imread("streamlitapp/Ground_Group_24.png")
         ax.imshow(bg_img, extent=[0, 360, 20, 360], aspect='auto', zorder=0)
 
     # Sort shots so 0s are drawn first, 6s last (so 6s are on top)
@@ -412,9 +441,31 @@ def spike_graph_plot(
     # if team_bats is None:
     #     team_bowl = "All Teams"
     # ax.set_title(f"{player_name} Spike Graph Wheel Innings: {inns}", fontsize=12)
-    if show_title:
-        ax.set_title(f"{player_name} vs {team_bowl} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper(), fontsize=12, fontweight='bold',fontfamily='DejaVu Sans')
+    # if show_title:
+    #     ax.set_title(f"{player_name} vs {team_bowl} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper(), fontsize=12, fontweight='bold',fontfamily='DejaVu Sans')
         # ax.set_title(f"{player_name} - {team_bats} vs {team_bowl} | Test: {test_num}, Inns: {inns}".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
+    # updated filter with teams names in plot
+    if show_title:
+    # Determine title display
+        if player_name and player_name != "All Players":
+            title_name = player_name
+            title_opponent = team_bowl
+        else:
+            # For team view, show both teams
+            if not local_df.empty:
+                batting_teams_display = local_df['team_bat'].unique()
+                if len(batting_teams_display) == 1:
+                    title_name = batting_teams_display[0]
+                    title_opponent = team_bowl
+                else:
+                    title_name = "All Players"
+                    title_opponent = team_bowl
+            else:
+                title_name = "All Players"
+                title_opponent = "All Teams"
+        
+        ax.set_title(f"{title_name} vs {title_opponent} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper(), 
+                    fontsize=12, fontweight='bold', fontfamily='DejaVu Sans')
 
 
 
