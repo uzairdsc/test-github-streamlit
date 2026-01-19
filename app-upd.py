@@ -133,136 +133,141 @@ if st.session_state.df is not None:
         st.rerun()
         
 # ===== Main App Logic =====
-# if df is not None:
-#     # Update column names for generalized dataset (Himanish format)
-#     # MatNum -> p_match, batsmanName -> bat, inningNumber -> inns, etc.
-    
-#     # Compute static filters
-#     test_nums = sorted(df['p_match'].dropna().unique())
-#     test_num_options = ["All"] + [str(num) for num in test_nums]
-#     batting_teams = sorted(df['team_bat'].dropna().unique())
-
-#     col1, col2 = st.columns(2)
-
-#     with col1:
-#         selected_test_str = st.selectbox("Select Match Number", test_num_options, index=0)
-#         selected_test_num = None if selected_test_str == "All" else int(selected_test_str)
-        
-#         team_bat_options = ["All"] + list(batting_teams)
-#         selected_team = st.selectbox("Select Batting Team", team_bat_options, index=0)
-#         selected_team = None if selected_team == "All" else selected_team
-
-#     # Compute dependent filters
-#     if selected_team:
-#         player_list = sorted(df[df['team_bat'] == selected_team]['bat'].dropna().unique())
-#     else:
-#         player_list = sorted(df['bat'].dropna().unique())
-    
-#     player_options = ["All"] + list(set(player_list))
-    
-#     # Innings options
-#     if selected_team and selected_test_num:
-#         inns = df[(df['team_bat'] == selected_team) & (df['p_match'] == selected_test_num)]['inns']
-#     elif selected_team:
-#         inns = df[df['team_bat'] == selected_team]['inns']
-#     elif selected_test_num:
-#         inns = df[df['p_match'] == selected_test_num]['inns']
-#     else:
-#         inns = df['inns']
-
-#     innings_options = sorted(inns.dropna().unique())
-#     innings_display = ["All"] + [str(i) for i in innings_options]
-
-#     # Bowler list
-#     if selected_team:
-#         bowler_list = sorted(df[df['team_bowl'] != selected_team]['bowl'].dropna().unique())
-#     else:
-#         bowler_list = sorted(df['bowl'].dropna().unique())
-
-#     with col2:
-#         selected_inns_str = st.selectbox("Select Innings", innings_display, index=0)
-#         selected_inns = None if selected_inns_str == "All" else int(selected_inns_str)
-        
-#         selected_player = st.selectbox("Select Player", player_options)
-#         selected_player = None if selected_player == "All" else selected_player
-
-#         selected_bowler = st.selectbox("Select Bowler", ['All'] + list(bowler_list), index=0)
-#         bowler_name = None if selected_bowler == "All" else selected_bowler
-
-#     # Competition filter (optional)
-#     if 'competition' in df.columns:
-#         competitions = sorted(df['competition'].dropna().unique())
-#         competition_options = ["All"] + list(competitions)
-#         selected_competition = st.selectbox("Select Competition", competition_options, index=0)
-#         selected_competition = None if selected_competition == "All" else selected_competition
-#     else:
-#         selected_competition = None
-# ===== Main App Logic =====
 if df is not None:
-    # Compute static filters
-    test_nums = sorted(df['p_match'].dropna().unique())
-    test_num_options = ["All"] + [str(num) for num in test_nums]
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        # STEP 1: Select Match Number
-        selected_test_str = st.selectbox("Select Match Number", test_num_options, index=0)
-        selected_test_num = None if selected_test_str == "All" else int(selected_test_str)
-        
-        # STEP 2: Filter teams based on selected match
-        if selected_test_num:
-            filtered_by_match = df[df['p_match'] == selected_test_num]
-        else:
-            filtered_by_match = df
-        
-        batting_teams = sorted(filtered_by_match['team_bat'].dropna().unique())
-        team_bat_options = ["All"] + list(batting_teams)
-        selected_team = st.selectbox("Select Batting Team", team_bat_options, index=0)
-        selected_team = None if selected_team == "All" else selected_team
-
-    # STEP 3: Filter innings based on match + team
-    if selected_team:
-        filtered_by_team = filtered_by_match[filtered_by_match['team_bat'] == selected_team]
-    else:
-        filtered_by_team = filtered_by_match
+    # Convert date column to datetime if it exists and isn't already
+    if 'date' in df.columns and df['date'].dtype == 'object':
+        df['date'] = pd.to_datetime(df['date'])
     
-    innings_options = sorted(filtered_by_team['inns'].dropna().unique())
-    innings_display = ["All"] + [str(i) for i in innings_options]
-
-    with col2:
-        # STEP 4: Select Innings
-        selected_inns_str = st.selectbox("Select Innings", innings_display, index=0)
-        selected_inns = None if selected_inns_str == "All" else int(selected_inns_str)
+    # ===== CASCADING FILTERS SECTION =====
+    st.markdown("---")
+    st.subheader("Filter Options")
+    
+    # Create 3 columns for filters
+    filter_col1, filter_col2, filter_col3 = st.columns(3)
+    
+    # Initialize working dataframe
+    working_df = df.copy()
+    
+    # ===== COLUMN 1: Date, Competition, Match =====
+    with filter_col1:
         
-        # STEP 5: Filter players based on match + team + innings
-        if selected_inns:
-            filtered_by_innings = filtered_by_team[filtered_by_team['inns'] == selected_inns]
+        # Date Range Filter (always shown)
+        if 'date' in df.columns:
+            min_date = df['date'].min().date()
+            max_date = df['date'].max().date()
+            
+            date_range = st.date_input(
+                "Date Range",
+                value=(min_date, max_date),
+                min_value=min_date,
+                max_value=max_date
+            )
+            if len(date_range) == 2:
+                date_from, date_to = date_range
+                working_df = working_df[
+                    (working_df['date'].dt.date >= date_from) & 
+                    (working_df['date'].dt.date <= date_to)
+                ]
+            else:
+                date_from, date_to = None, None
         else:
-            filtered_by_innings = filtered_by_team
+            date_from, date_to = None, None
         
-        player_list = sorted(filtered_by_innings['bat'].dropna().unique())
-        player_options = ["All"] + list(set(player_list))
-        selected_player = st.selectbox("Select Player", player_options)
-        selected_player = None if selected_player == "All" else selected_player
-
-        # STEP 6: Filter bowlers based on match + opposing team
-        if selected_team:
-            bowler_list = sorted(filtered_by_match[filtered_by_match['team_bowl'] != selected_team]['bowl'].dropna().unique())
-        else:
-            bowler_list = sorted(filtered_by_match['bowl'].dropna().unique())
-        
-        selected_bowler = st.selectbox("Select Bowler", ['All'] + list(bowler_list), index=0)
-        bowler_name = None if selected_bowler == "All" else selected_bowler
-
-    # Competition filter (optional)
-    if 'competition' in df.columns:
-        competitions = sorted(df['competition'].dropna().unique())
+        # Competition Filter (from working_df)
+        competitions = sorted(working_df['competition'].dropna().unique())
         competition_options = ["All"] + list(competitions)
-        selected_competition = st.selectbox("Select Competition", competition_options, index=0)
-        selected_competition = None if selected_competition == "All" else selected_competition
+        selected_competition = st.selectbox("Competition", competition_options, index=0)
+        
+        if selected_competition != "All":
+            working_df = working_df[working_df['competition'] == selected_competition]
+            selected_competition_value = selected_competition
+        else:
+            selected_competition_value = None
+        
+        # Match Number Filter (from working_df)
+        mat_nums = sorted(working_df['p_match'].dropna().unique())
+        mat_num_options = ["All"] + [str(int(num)) for num in mat_nums]
+        selected_mat_str = st.selectbox("Match Number", mat_num_options, index=0)
+        
+        if selected_mat_str != "All":
+            selected_mat_num = int(selected_mat_str)
+            working_df = working_df[working_df['p_match'] == selected_mat_num]
+        else:
+            selected_mat_num = None
+    
+    # ===== COLUMN 2: Teams, Innings =====
+    with filter_col2:
+        
+        # Batting Team Filter (from working_df)
+        batting_teams = sorted(working_df['team_bat'].dropna().unique())
+        team_bat_options = ["All"] + list(batting_teams)
+        selected_team = st.selectbox("Batting Team", team_bat_options, index=0)
+        
+        if selected_team != "All":
+            working_df = working_df[working_df['team_bat'] == selected_team]
+            selected_team_value = selected_team
+        else:
+            selected_team_value = None
+        
+        # Bowling Team Filter (from working_df, excluding batting team)
+        bowling_teams = sorted(working_df['team_bowl'].dropna().unique())
+        # Exclude selected batting team from bowling options
+        if selected_team != "All":
+            bowling_teams = [t for t in bowling_teams if t != selected_team]
+        team_bowl_options = ["All"] + list(bowling_teams)
+        selected_team_bowl = st.selectbox("Bowling Team", team_bowl_options, index=0)
+        
+        if selected_team_bowl != "All":
+            working_df = working_df[working_df['team_bowl'] == selected_team_bowl]
+            selected_team_bowl_value = selected_team_bowl
+        else:
+            selected_team_bowl_value = None
+        
+        # Innings Filter (from working_df)
+        innings_options = sorted(working_df['inns'].dropna().unique())
+        innings_display = ["All"] + [str(int(i)) for i in innings_options]
+        selected_inns_str = st.selectbox("Innings", innings_display, index=0)
+        
+        if selected_inns_str != "All":
+            selected_inns = int(selected_inns_str)
+            working_df = working_df[working_df['inns'] == selected_inns]
+        else:
+            selected_inns = None
+    
+    # ===== COLUMN 3: Player, Bowler =====
+    with filter_col3:
+        
+        # Player Filter (from working_df, only from selected batting team)
+        player_list = sorted(working_df['bat'].dropna().unique())
+        player_options = ["All"] + list(player_list)
+        selected_player = st.selectbox("Player", player_options, index=0)
+        
+        if selected_player != "All":
+            selected_player_value = selected_player
+        else:
+            selected_player_value = None
+        
+        # Bowler Filter (from working_df, only from bowling team)
+        bowler_list = sorted(working_df['bowl'].dropna().unique())
+        bowler_options = ["All"] + list(bowler_list)
+        selected_bowler = st.selectbox("Bowler", bowler_options, index=0)
+        
+        if selected_bowler != "All":
+            bowler_name = selected_bowler
+        else:
+            bowler_name = None
+    
+    # ===== DATA VALIDATION =====
+    st.markdown("---")
+    
+    # Check if we have data after all filters
+    if working_df.empty:
+        st.error("⚠️ No data available for the selected filters. Please adjust your filter selections.")
+        # st.info("💡 Try selecting 'All' for some filters or choosing different combinations.")
+        st.stop()
     else:
-        selected_competition = None
+        pass
+        # st.success(f"✅ Found {len(working_df):,} balls matching your filters")
 
     st.markdown("**Select Plot Types to Display:**")
     plot_types = st.multiselect(
@@ -278,11 +283,11 @@ if df is not None:
 
     if plot_types:
         if "Spike Plot with Stats" in plot_types:
-            st.markdown("<h2 style='text-align: center;'>📊 Spike Plot with Stats</h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center;'> Spike Plot with Stats</h2>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([2, 2, 2])
             
             with col1:
-                st.markdown("## ⚙️ Customize Plot Info")
+                st.markdown("## Customize Plot Info")
                 show_title = st.checkbox("Show Plot Title", value=True)
                 show_legend = st.checkbox("Show Legend", value=True)
                 show_summary = st.checkbox("Show Runs Summary", value=True)
@@ -330,14 +335,17 @@ if df is not None:
             else:
                 fig_spike = spike_plot_custom(
                     df=df,
-                    player_name=selected_player,
+                    player_name=selected_player_value,
                     inns=selected_inns,
-                    mat_num=selected_test_num,
-                    team_bat=selected_team,
+                    mat_num=selected_mat_num,
+                    team_bat=selected_team_value,
+                    team_bowl=selected_team_bowl_value,
                     run_values=filtered_runs_spike,
                     bowler_name=bowler_name,
-                    competition=selected_competition,
+                    competition=selected_competition_value,
                     transparent=transparent_bg,
+                    date_from=date_from,
+                    date_to=date_to,
                     show_title=show_title,
                     show_summary=show_summary,
                     show_legend=show_legend,
@@ -364,11 +372,11 @@ if df is not None:
                     )
 
         if "Wagon Zone Plot with Stats" in plot_types:
-            st.markdown("<h2 style='text-align: center;'>📊 Wagon Zone Plot with Stats</h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center;'>Wagon Zone Plot with Stats</h2>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([2, 2, 2])
             
             with col1:
-                st.markdown("## ⚙️ Customize Plot Info")    
+                st.markdown("## Customize Plot Info")    
                 show_title_wagon = st.checkbox("Show Plot Title (Wagon)", value=True, key="wagon_title")
                 show_summary_wagon = st.checkbox("Show Runs Summary (Wagon)", value=True, key="wagon_summary")
                 runs_count_wagon = st.checkbox("Show Total Runs (Wagon)", value=True, key="wagon_total")
@@ -415,13 +423,17 @@ if df is not None:
                 with col2:
                     fig_wagon = wagon_zone_plot(
                         df=df,
-                        player_name=selected_player,
+                        player_name=selected_player_value,
                         inns=selected_inns,
-                        mat_num=selected_test_num,
+                        mat_num=selected_mat_num,
+                        team_bat=selected_team_value,
+                        team_bowl=selected_team_bowl_value,
                         bowler_name=bowler_name,
                         run_values=filtered_runs_wagon,
-                        competition=selected_competition,
+                        competition=selected_competition_value,
                         transparent=transparent_bg,
+                        date_from=date_from,
+                        date_to=date_to,
                         show_title=show_title_wagon,
                         show_summary=show_summary_wagon,
                         runs_count=runs_count_wagon,
@@ -446,5 +458,3 @@ if df is not None:
 
 else:
     st.info("Please select a dataset source to begin.")
-
-
