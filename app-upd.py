@@ -360,9 +360,11 @@ if df is not None:
                     st.pyplot(fig_spike)
             
             with col1:
-                buf = BytesIO()
+                # buf = BytesIO()
                 if fig_spike:
+                    buf = BytesIO()
                     fig_spike.savefig(buf, format="png", transparent=transparent_bg)
+                    buf.seek(0)
                     st.download_button(
                         label="📅 Download Plot as PNG",
                         data=buf.getvalue(),
@@ -445,9 +447,11 @@ if df is not None:
                     st.pyplot(fig_wagon)
             
             with col1:
-                buf = BytesIO()
+                # buf = BytesIO()
                 if fig_wagon:
+                    buf = BytesIO()
                     fig_wagon.savefig(buf, format="png", transparent=transparent_bg)
+                    buf.seek(0)
                     st.download_button(
                         label="📅 Download Plot as PNG",
                         data=buf.getvalue(),
@@ -458,3 +462,4 @@ if df is not None:
 
 else:
     st.info("Please select a dataset source to begin.")
+
