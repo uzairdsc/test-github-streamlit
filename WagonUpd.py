@@ -1,32 +1,52 @@
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import numpy as np
 from matplotlib import cm
 from matplotlib.patches import Wedge
+import pandas as pd
 
 def wagon_zone_plot(
-    df, player_name=None, inns=None, mat_num=None, bowler_name=None,
-    run_values=None, competition=None, transparent=False, show_title=True, show_summary=True,
-    show_fours_sixes=True, show_control=True, show_prod_shot=True,
-    runs_count=True, show_bowler=True
+    df, player_name=None, inns=None, mat_num=None, bowler_name=None, team_bat=None, 
+    team_bowl=None, run_values=None, competition=None, transparent=False, 
+    date_from=None, date_to=None,
+    show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, 
+    show_prod_shot=True,runs_count=True, show_bowler=True
 ):
     # ---- Apply Filters for Plotting ----
     local_df = df.copy()
+
 
     if player_name:
         local_df = local_df[local_df['bat'] == player_name] # bat
     if mat_num:
         # local_df = local_df[local_df['TestNum'] == mat_num]
         local_df = local_df[local_df['p_match'] == mat_num] # p_match
+
     if inns:
         local_df = local_df[local_df['inns'] == inns] # inns
+
     if bowler_name:
         local_df = local_df[local_df['bowl'] == bowler_name] #bowl
+
     if run_values is not None:
         local_df = local_df[local_df['batruns'].isin(run_values)] #batruns
+
+    if team_bat is not None and team_bat != "All":
+        local_df = local_df[local_df['team_bat'] == team_bat]
+
+    if team_bowl is not None and team_bowl != "All":
+        local_df = local_df[local_df['team_bowl'] == team_bowl]
     #competition filter
     if competition:
         local_df = local_df[local_df['competition'] == competition]
+
+    # Date range filter
+    if date_from is not None:
+        local_df = local_df[local_df['date'] >= pd.to_datetime(date_from)]
+
+    if date_to is not None:
+        local_df = local_df[local_df['date'] <= pd.to_datetime(date_to)]
+
 
     if player_name is None:
         innings_valid_balls = local_df.copy()  # include all for team
@@ -55,9 +75,15 @@ def wagon_zone_plot(
 
         balls_faced = valid_balls.shape[0]
 
-        control_pct = round(
-            (valid_balls[valid_balls['control'] == 1].shape[0]) / balls_faced * 100, 2 
-        )#shotControl to control
+        # control_pct = round(
+        #     (valid_balls[valid_balls['control'] == 1].shape[0]) / balls_faced * 100, 2 
+        # )#shotControl to control
+
+        # Control calculation like spike graph
+        controlled_balls = valid_balls[valid_balls['control'] == 1]
+        control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2) if len(valid_balls) > 0 else 0.0
+
+        
 
         shot_summary = valid_shots.groupby('shot').agg({ #shot
             'score': 'sum', #score
@@ -82,9 +108,13 @@ def wagon_zone_plot(
         
         balls_faced = valid_balls.shape[0]
 
-        control_pct = round(
-            (valid_balls[valid_balls['control'] == 1].shape[0]) / balls_faced * 100, 2 
-        ) #shotControl to control
+        # control_pct = round(
+        #     (valid_balls[valid_balls['control'] == 1].shape[0]) / balls_faced * 100, 2 
+        # ) #shotControl to control
+        
+        #  Control calculation like spike graph
+        controlled_balls = valid_balls[valid_balls['control'] == 1]
+        control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2) if len(valid_balls) > 0 else 0.0
 
         shot_summary = valid_shots.groupby('shot').agg({ #shot
             'batruns': 'sum', #batruns
@@ -115,6 +145,10 @@ def wagon_zone_plot(
         return int(degree // 45)
 
     player_data['quadrant'] = player_data.apply(lambda row: get_quadrant(row['wagonX'], row['wagonY']), axis=1)
+    # if not player_data.empty:
+    #     player_data['quadrant'] = player_data.apply(lambda row: get_quadrant(row['wagonX'], row['wagonY']), axis=1)
+    # else:
+    #     player_data['quadrant'] = pd.Series(dtype='int')
     quadrant_totals = [player_data[player_data['quadrant'] == q][score_col].sum() for q in range(8)]
     total_score = sum(quadrant_totals)
 
@@ -157,13 +191,6 @@ def wagon_zone_plot(
     ax.set_aspect('equal')
     ax.set_axis_off()
 
-    # Metadata for title
-    if mat_num is None: mat_num = "All Matches"
-    if inns is None: inns = "All Innings"
-    if player_name is None: player_name = "All Players"
-    # competition filter
-    if competition is None: competition = "All Competitions"
-
     # Determine team names
     # if not local_df.empty:
     #     team_bats = local_df['team_bat'].unique() 
@@ -176,28 +203,88 @@ def wagon_zone_plot(
     # else:
     #     team_bowl = "All Teams"
     
-    # Determine team names
+    # # Determine team names
+    # if not local_df.empty:
+    #     team_bats = local_df['team_bat'].unique() 
+    #     if len(team_bats) == 1:
+    #         team_bat = team_bats[0]
+    #         # Filter by the same match to get correct opponent
+    #         if mat_num is not None:
+    #             match_df = df[df['p_match'] == mat_num]
+    #         else:
+    #             match_df = local_df
+            
+    #         # Get opponent from the same match
+    #         team_bowls_in_match = match_df['team_bowl'].unique()
+    #         team_bowl = [t for t in team_bowls_in_match if t != team_bat][0] if len(team_bowls_in_match) > 0 else "Opponents"
+    #     else:
+    #         team_bowl = "All Teams"
+    # else:
+    #     team_bowl = "All Teams"
+
+    # if show_title:
+    #     ax.set_title(
+    #         f"{player_name} vs {team_bowl} | {competition} - Mat '{mat_num}', Inns: '{inns}'".upper(),
+    #         fontsize=12, fontweight='bold', fontfamily='DejaVu Sans'
+    #     )
+
+    # Metadata for title - DO THIS FIRST
+    if mat_num is None: mat_num = "All Matches"
+    if inns is None: inns = "All Innings"
+    if player_name is None: player_name = "All Players"
+    if competition is None: competition = "All Comps"
+    
+    # Determine team names ONLY if not provided as parameters
     if not local_df.empty:
-        team_bats = local_df['team_bat'].unique() 
-        if len(team_bats) == 1:
-            team_bat = team_bats[0]
-            # Filter by the same match to get correct opponent
-            if mat_num is not None:
+        # Only detect team_bat if it wasn't provided as a filter
+        if team_bat is None or team_bat == "All":
+            team_bats = local_df['team_bat'].unique() 
+            if len(team_bats) == 1:
+                team_bat = team_bats[0]
+            else:
+                team_bat = "All Teams"
+        
+        # Only detect team_bowl if it wasn't provided as a filter
+        if team_bowl is None or team_bowl == "All":
+            if mat_num is not None and mat_num != "All Matches":
                 match_df = df[df['p_match'] == mat_num]
             else:
                 match_df = local_df
             
-            # Get opponent from the same match
             team_bowls_in_match = match_df['team_bowl'].unique()
-            team_bowl = [t for t in team_bowls_in_match if t != team_bat][0] if len(team_bowls_in_match) > 0 else "Opponents"
-        else:
-            team_bowl = "All Teams"
+            opponents = [t for t in team_bowls_in_match if t != team_bat]
+            
+            if len(opponents) == 1:
+                team_bowl = opponents[0]
+            elif len(opponents) > 1:
+                team_bowl = "All Teams"
+            else:
+                team_bowl = "Opponents"
     else:
-        team_bowl = "All Teams"
-
+        if team_bat is None: team_bat = "All Teams"
+        if team_bowl is None: team_bowl = "All Teams"
+    
     if show_title:
+        # Determine title display (match spike graph logic)
+        if player_name and player_name != "All Players":
+            title_name = player_name
+            title_opponent = team_bowl
+        else:
+            # For team view, show batting team from filtered data
+            if not local_df.empty:
+                batting_teams_display = local_df['team_bat'].unique()
+                if len(batting_teams_display) == 1:
+                    title_name = batting_teams_display[0]  # Show actual team name
+                    title_opponent = team_bowl
+                else:
+                    title_name = "All Players"
+                    title_opponent = team_bowl
+            else:
+                title_name = "All Players"
+                title_opponent = "All Teams"
+        
         ax.set_title(
-            f"{player_name} vs {team_bowl} | {competition} - Mat '{mat_num}', Inns: '{inns}'".upper(),
+            f"{title_name} vs {title_opponent} | {competition} - Mat '{mat_num}', Inns: '{inns}'".upper(),
             fontsize=12, fontweight='bold', fontfamily='DejaVu Sans'
         )
 
@@ -231,6 +318,6 @@ def wagon_zone_plot(
                 color='blue', fontweight='bold')
 
     plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07)
-    # plt.show()
     plt.close(fig)
     return fig
+    # plt.show()
