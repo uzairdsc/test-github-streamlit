@@ -31,7 +31,7 @@ if not st.session_state.authenticated:
 from SpikeUpd import spike_graph_plot as spike_plot_custom, spike_graph_plot_trasnparent as spike_plot_transparent
 from WagonUpd import wagon_zone_plot, wagon_zone_plot_transparent
 
-st.set_page_config(page_title="Cricket Wagon Wheel App", layout="wide")
+st.set_page_config(page_title="Cricket Wagon Wheel App", page_icon="🏏" , layout="wide")
 st.title("🏏 Cricket Wagon Wheel Analysis Dashboard")
 
 
@@ -709,3 +709,4 @@ if df is not None:
 
 else:
     st.info("Please select a dataset source to begin.")
+
