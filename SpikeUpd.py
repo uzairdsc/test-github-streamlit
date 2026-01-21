@@ -1,3 +1,4 @@
+# spike plot
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -8,8 +9,8 @@ import matplotlib.image as mpimg
 
 def spike_graph_plot(
     df, player_name=None,  inns=None, mat_num = None, team_bat=None, team_bowl=None,
-    run_values=None, bowler_name=None, competition=None, transparent=False,
-    date_from=None, date_to=None,
+    run_values=None, bowler_name=None, competition=None, date_from=None, date_to=None,
+    transparent=False,
     show_title=True, show_legend=True, show_summary=True,
     show_fours_sixes=True, show_control=True, show_prod_shot=True, 
     runs_count=True, show_bowler=True, show_ground=True
@@ -60,7 +61,6 @@ def spike_graph_plot(
     if team_bowl is not None and team_bowl != "All":
         local_df = local_df[local_df['team_bowl'] == team_bowl]
 
-
     # ADD THIS:
     if competition:
         local_df = local_df[local_df['competition'] == competition]
@@ -71,6 +71,7 @@ def spike_graph_plot(
 
     if date_to is not None:
         local_df = local_df[local_df['date'] <= pd.to_datetime(date_to)]
+
 
     # === Total Innings Summary ===
     # innings_valid_balls = local_df[local_df['wides'] == 0]
@@ -292,7 +293,8 @@ def spike_graph_plot(
             top_shot_type = shot_summary.index[0]
             most_prod_shot_text = (
                 # f"{top_shot_type}: {int(top_shot['batsmanRuns'])} runs,\n"
-                f"{top_shot_type}: {int(top_shot[run_col])} runs,\n"
+                # f"{top_shot_type}: {int(top_shot[run_col])} runs,\n"
+                f"{top_shot_type}: {int(top_shot[run_col])} runs, "
                 f"4s: {int(top_shot['isFour'])}, 6s: {int(top_shot['isSix'])}"
             )
         else:
@@ -328,7 +330,7 @@ def spike_graph_plot(
      # Add background image
     if not transparent and show_ground:
         # bg_img = mpimg.imread("ground_high_res.png")
-        bg_img = mpimg.imread("streamlitapp/Ground_Group_24.png")
+        bg_img = mpimg.imread("Ground_Group_24.png")
         ax.imshow(bg_img, extent=[0, 360, 20, 360], aspect='auto', zorder=0)
 
     # Sort shots so 0s are drawn first, 6s last (so 6s are on top)
@@ -423,21 +425,23 @@ def spike_graph_plot(
     #         fontsize=11, ha='center', color='purple')
     # ax.text(180, 405, f"Most Productive Shot: {most_prod_shot_text}",
     #         fontsize=11, ha='center', color='navy')
-    ax.set_xlim(-20, 470)
-    ax.set_ylim(-30, 370)
+    # ax.set_xlim(-20, 470)
+    # ax.set_ylim(-30, 370)
+    ax.set_xlim(-20, 380)
+    ax.set_ylim(-30, 460)
     ax.set_xticks([]), ax.set_yticks([])
     ax.set_xticklabels([]), ax.set_yticklabels([])
     ax.set_aspect('equal', adjustable='box')
 
     if mat_num is None:
-        mat_num = "All Matches"
+        mat_num = "All Mats"
     if inns is None:
-        inns = "All Innings"
+        inns = "All Inns"
     if player_name is None:
         player_name = "All Players"
     # ADD THIS:
     if competition is None:
-        competition = "All Competitions"
+        competition = "All Comps"
     # if team_bats is None:
     #     team_bowl = "All Teams"
     # ax.set_title(f"{player_name} Spike Graph Wheel Innings: {inns}", fontsize=12)
@@ -470,14 +474,12 @@ def spike_graph_plot(
 
 
     if show_summary:
-        ax.text(220, -20, f"Total Runs: {innings_runs} ({innings_balls} balls)",
+        ax.text(180, -20, f"Total Runs: {innings_runs} ({innings_balls} balls)",
                 fontsize=11, ha='center', fontweight='bold', color='darkgreen')
-        ax.text(220, -5, f"Total 4s: {innings_4s} | 6s: {innings_6s}",
+        ax.text(180, -5, f"Total 4s: {innings_4s} | 6s: {innings_6s}",
                 fontsize=11, ha='center', color='darkgreen')
     
-    if runs_count:
-        ax.text(430, 140, f"{total_score} ({balls_faced} balls)",
-                fontsize=11, ha='center', fontweight='bold')
+    
     # if runs_count:
     #     if player_name is None:
     #         ax.text(180, 375, f"{innings_runs} ({innings_balls} balls)",
@@ -486,32 +488,52 @@ def spike_graph_plot(
     #         ax.text(180, 375, f"{total_score} ({balls_faced} balls)",
     #                 fontsize=11, ha='center', fontweight='bold')
 
+    # if runs_count:
+    #     ax.text(430, 140, f"{total_score} ({balls_faced} balls)",
+    #             fontsize=11, ha='center', fontweight='bold')
+        
+    # if show_fours_sixes:
+    #     ax.text(430, 155, f"4s: {total_4s} | 6s: {total_6s}",
+    #             fontsize=11, ha='center', color='darkgreen')
+        
+    # if show_bowler:
+    #     if bowler_name is None:
+    #         bowler_name = 'All Bowlers'
+    #     if bowler_name:
+    #         ax.text(430,175, f"vs {bowler_name}",
+    #                 fontsize=11, ha='center', color='blue', fontweight='bold')
+
+    # if show_control:
+    #     ax.text(430, 80, f"Control: {control_pct}%",
+    #             fontsize=12, ha='center', color='purple', fontweight='bold')
+
+    # if show_prod_shot:
+    #     ax.text(430, 250, f"Productive Shot:\n{most_prod_shot_text}",
+    #             fontsize=11, ha='center', color='navy',fontweight='bold')
+
+    # update position for the plot
+    if runs_count:
+        ax.text(70, 400, f"{total_score} ({balls_faced} balls)",
+                fontsize=11, ha='center', fontweight='bold')
+        
     if show_fours_sixes:
-        ax.text(430, 155, f"4s: {total_4s} | 6s: {total_6s}",
+        ax.text(164, 400, f" - 4s: {total_4s} | 6s: {total_6s}",
                 fontsize=11, ha='center', color='darkgreen')
+        
     if show_bowler:
         if bowler_name is None:
             bowler_name = 'All Bowlers'
         if bowler_name:
-            ax.text(430,175, f"vs {bowler_name}",
+            ax.text(265,400, f" - vs {bowler_name}",
                     fontsize=11, ha='center', color='blue', fontweight='bold')
 
     if show_control:
-        ax.text(430, 80, f"Control: {control_pct}%",
+        ax.text(180, 380, f"Control: {control_pct}%",
                 fontsize=12, ha='center', color='purple', fontweight='bold')
 
     if show_prod_shot:
-        ax.text(430, 250, f"Productive Shot:\n{most_prod_shot_text}",
+        ax.text(180, 420, f"Productive Shot: {most_prod_shot_text}",
                 fontsize=11, ha='center', color='navy',fontweight='bold')
-
-    # ax.text(180, 375, f"Total Runs: {total_score} ({balls_faced_df.shape[0]} balls)",
-    #         fontsize=11, ha='center', fontweight='bold')
-    # ax.text(180, 388, f"4s: {total_4s} | 6s: {total_6s}",
-    #         fontsize=11, ha='center', color='darkgreen')
-    # ax.text(180, 402, f"Control: {control_pct}%",
-    #         fontsize=11, ha='center', color='purple')
-    # ax.text(180, 415, f"Most Productive Shot: {most_prod_shot_text}",
-    #         fontsize=11, ha='center', color='navy')
 
     ax.invert_yaxis()
     ax.set_axis_off()
@@ -529,14 +551,97 @@ def spike_graph_plot(
         ax.legend(
             handles=legend_elements,
             loc='center',
-            bbox_to_anchor=(430, 300),  # (x, y) in data coordinates
+            bbox_to_anchor=(180, 445),  # (x, y) in data coordinates
             bbox_transform=ax.transData,
             ncol=3,
             frameon=False,
             fontsize=8
         )
 
-    plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07)
+    # plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07)
+    plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.02)
     plt.close(fig)
     return fig
     # plt.show()
+
+# transparent spike plot 
+def spike_graph_plot_trasnparent(
+    df, player_name=None,  inns=None, mat_num = None, team_bat=None, team_bowl=None,
+    run_values=None, bowler_name=None, competition=None, date_from=None, date_to=None,    
+    transparent=True,
+    show_title=True, show_legend=True, show_summary=True,
+    show_fours_sixes=True, show_control=True, show_prod_shot=True, 
+    runs_count=True, show_bowler=True, show_ground=True
+):
+    # score_colors = {
+    #     # 0:  '#F70000',   
+    #     0:  '#8B0000',   
+    #     1:  "#FFA500",   
+    #     # 1:  "#ede4e4",   
+    #     2:  '#4169E1',   
+    #     3:  '#008080',   
+    #     4:  '#7CFC00',
+    #     5:  '#FF00FF',   
+    #     6:  '#FFBF00',   
+    # }
+    score_colors = {
+        0:  "#706B6C",   
+        1:  "#FF5733",   
+        2:  '#1F51FF',   
+        3:  '#D16FBC',   
+        4:  '#0B9B67',
+        5:  '#FFA500',   
+        6:  '#7A41D8',   
+    }
+    # Filter by match, player, and innings
+    # local_df = df[
+    #     (df['batsmanName'] == player_name) &
+    #     (df['TestNum']== test_num) if test_num is not None else True &
+    #     (df['inningNumber'] == inns) 
+    # ].copy()
+
+    if player_name is not None:
+        local_df = df[
+            (df['bat'] == player_name)
+        ].copy()
+    else:
+        local_df = df.copy()
+
+    if mat_num is not None:
+        local_df = local_df[local_df['p_match'] == mat_num]
+
+    if inns is not None:
+        local_df = local_df[local_df['inns'] == inns]
+        
+    if team_bat is not None and team_bat != "All":
+        local_df = local_df[local_df['team_bat'] == team_bat]
+
+    if team_bowl is not None and team_bowl != "All":
+        local_df = local_df[local_df['team_bowl'] == team_bowl]
+
+    # ADD THIS:
+    if competition:
+        local_df = local_df[local_df['competition'] == competition]
+    
+        # Date range filter
+    if date_from is not None:
+        local_df = local_df[local_df['date'] >= pd.to_datetime(date_from)]
+
+    if date_to is not None:
+        local_df = local_df[local_df['date'] <= pd.to_datetime(date_to)]
+
+
+    # === Total Innings Summary ===
+    # innings_valid_balls = local_df[local_df['wides'] == 0]
+    # innings_runs = innings_valid_balls['batsmanRuns'].sum()
+    # innings_balls = innings_valid_balls.shape[0]
+    innings_valid_balls = local_df[local_df['wide'] == 0]
+
+    if player_name is None:
+        innings_runs = innings_valid_balls['score'].sum()
+    else:
+        innings_runs = innings_valid_balls['batruns'].sum()
+
+    innings_balls = innings_valid_balls.shape[0]
+    
+    # innings_4s = innin
