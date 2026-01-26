@@ -1,3 +1,4 @@
+from networkx import center
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -28,10 +29,10 @@ if not st.session_state.authenticated:
     st.stop()
 
 # Import your plotting methods
-from SpikeUpd import spike_graph_plot as spike_plot_custom, spike_graph_plot_trasnparent as spike_plot_transparent, spike_graph_plot_descriptive
-from WagonUpd import wagon_zone_plot, wagon_zone_plot_transparent, wagon_zone_plot_descriptive
+from SpikeUpd import spike_graph_plot as spike_plot_custom, spike_graph_plot_trasnparent as spike_plot_transparent, spike_graph_plot_descriptive, spike_graph_plot_descriptive_transparent
+from WagonUpd import wagon_zone_plot, wagon_zone_plot_transparent, wagon_zone_plot_descriptive, wagon_zone_plot_descriptive_transparent
 
-st.set_page_config(page_title="Cricket Wagon Wheel App", page_icon="🏏" ,layout="wide")
+st.set_page_config(page_title="Cricket Wagon Wheel App" ,page_icon="🏏" ,layout="wide")
 st.title("🏏 Cricket Wagon Wheel Analysis Dashboard")
 
 
@@ -331,13 +332,15 @@ if df is not None:
             "Spike Plot (White Background)",
             "Spike Plot (Transparent Background)",
             "Spike Graph Descriptive",
+            "Spike Graph Descriptive (Transparent)",
             "Wagon Zone Plot (White Background)",
             "Wagon Zone Plot (Transparent Background)",
-            "Wagon Zone Descriptive"
+            "Wagon Zone Descriptive",
+            "Wagon Zone Descriptive (Transparent)"
         ]
     )
 
-    fig_spike, fig_wagon, fig_spike_trans, fig_wagon_trans, fig_spike_desc, fig_wagon_desc = None, None, None, None, None, None
+    fig_spike, fig_wagon, fig_spike_trans, fig_wagon_trans, fig_spike_desc, fig_wagon_desc, fig_spike_desc_trans, fig_wagon_desc_trans = None, None, None, None, None, None, None, None
 
     if plot_types:
         if "Spike Plot (White Background)" in plot_types:
@@ -609,6 +612,95 @@ if df is not None:
                         key="spike_desc_download"
                     )
 
+        if "Spike Graph Descriptive (Transparent)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Spike Graph Descriptive (Transparent)</h2>", unsafe_allow_html=True)
+            col1, col2, col3 = st.columns([2, 2, 2])
+            
+            with col1:
+                st.markdown("## Customize Plot Info")
+                show_title_desc_trans = st.checkbox("Show Plot Title", value=True, key="spike_desc_trans_title")
+                show_legend_desc_trans = st.checkbox("Show Legend", value=True, key="spike_desc_trans_legend")
+                show_summary_desc_trans = st.checkbox("Show Runs Summary", value=True, key="spike_desc_trans_summary")
+                runs_count_desc_trans = st.checkbox("Show Runs Count", value=True, key="spike_desc_trans_runs")
+                show_fours_sixes_desc_trans = st.checkbox("Show 4s and 6s", value=True, key="spike_desc_trans_fs")
+                show_bowler_desc_trans = st.checkbox("Show Bowler", value=True, key="spike_desc_trans_bowler")
+                show_control_desc_trans = st.checkbox("Show Control %", value=True, key="spike_desc_trans_control")
+                show_prod_shot_desc_trans = st.checkbox("Show Productive Shot", value=True, key="spike_desc_trans_prod")
+                show_ground_desc_trans = st.checkbox("Show Ground Image", value=True, key="spike_desc_trans_ground")
+
+            with col3:
+                st.markdown("## Run Filter (Spike Graph)")
+
+                if "run_init_spike_desc_trans" not in st.session_state:
+                    st.session_state.run_init_spike_desc_trans = True
+                    for i in range(7):
+                        st.session_state[f'run_{i}_spike_desc_trans'] = True
+                    st.session_state["run_all_spike_desc_trans"] = True
+
+                def sync_all_to_individual_spike_desc_trans():
+                    for i in range(7):
+                        st.session_state[f'run_{i}_spike_desc_trans'] = st.session_state["run_all_spike_desc_trans"]
+
+                def sync_individual_to_all_spike_desc_trans():
+                    if all(st.session_state.get(f'run_{i}_spike_desc_trans', False) for i in range(7)):
+                        st.session_state["run_all_spike_desc_trans"] = True
+
+                st.checkbox("All", key="run_all_spike_desc_trans", on_change=sync_all_to_individual_spike_desc_trans)
+
+                for i in range(7):
+                    st.checkbox(str(i), key=f'run_{i}_spike_desc_trans', on_change=sync_individual_to_all_spike_desc_trans)
+
+                individual_selected_spike_desc_trans = [i for i in range(7) if st.session_state.get(f'run_{i}_spike_desc_trans', False)]
+
+                if st.session_state["run_all_spike_desc_trans"]:
+                    filtered_runs_spike_desc_trans = None
+                elif individual_selected_spike_desc_trans:
+                    filtered_runs_spike_desc_trans = individual_selected_spike_desc_trans
+                else:
+                    filtered_runs_spike_desc_trans = []
+                    
+            if filtered_runs_spike_desc_trans == []:
+                st.warning("Please select at least one run value to display the plot.")
+            else:
+                fig_spike_desc_trans = spike_graph_plot_descriptive_transparent(
+                    df=df,
+                    player_name=selected_player_value,
+                    inns=selected_inns,
+                    mat_num=selected_mat_num,
+                    team_bat=selected_team_value,
+                    team_bowl=selected_team_bowl_value,
+                    run_values=filtered_runs_spike_desc_trans,
+                    bowler_name=bowler_name,
+                    competition=selected_competition_value,
+                    transparent=True,
+                    date_from=date_from,
+                    date_to=date_to,
+                    show_title=show_title_desc_trans,
+                    show_summary=show_summary_desc_trans,
+                    show_legend=show_legend_desc_trans,
+                    runs_count=runs_count_desc_trans,
+                    show_fours_sixes=show_fours_sixes_desc_trans,
+                    show_control=show_control_desc_trans,
+                    show_prod_shot=show_prod_shot_desc_trans,
+                    show_bowler=show_bowler_desc_trans,
+                    show_ground=show_ground_desc_trans
+                )
+                with col2:
+                    st.pyplot(fig_spike_desc_trans)
+            
+            with col1:
+                if fig_spike_desc_trans:
+                    buf = BytesIO()
+                    fig_spike_desc_trans.savefig(buf, format="png", transparent=True, dpi=300, bbox_inches='tight')
+                    buf.seek(0)
+                    st.download_button(
+                        label="📅 Download Plot as PNG",
+                        data=buf.getvalue(),
+                        file_name=f"{selected_player}_spike_graph_descriptive_transparent.png",
+                        mime="image/png",
+                        key="spike_desc_trans_download"
+                    )
+
         if "Wagon Zone Plot (White Background)" in plot_types:
             st.markdown("<h2 style='text-align: center;'>Wagon Zone Plot (White Background)</h2>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([2, 2, 2])
@@ -866,8 +958,93 @@ if df is not None:
                         key="wagon_desc_download"
                     )
 
+        if "Wagon Zone Descriptive (Transparent)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Wagon Zone Descriptive (Transparent)</h2>", unsafe_allow_html=True)
+            col1, col2, col3 = st.columns([2, 2, 2])
+            
+            with col1:
+                st.markdown("## Customize Plot Info")
+                show_title_wagon_desc_trans = st.checkbox("Show Plot Title (Wagon Desc)", value=True, key="wagon_desc_trans_title")
+                show_summary_wagon_desc_trans = st.checkbox("Show Runs Summary (Wagon Desc)", value=True, key="wagon_desc_trans_summary")
+                runs_count_wagon_desc_trans = st.checkbox("Show Runs Count (Wagon Desc)", value=True, key="wagon_desc_trans_runs")
+                show_fours_sixes_wagon_desc_trans = st.checkbox("Show 4s and 6s (Wagon Desc)", value=True, key="wagon_desc_trans_fs")
+                show_bowler_wagon_desc_trans = st.checkbox("Show Bowler (Wagon Desc)", value=True, key="wagon_desc_trans_bowler")
+                show_control_wagon_desc_trans = st.checkbox("Show Control % (Wagon Desc)", value=True, key="wagon_desc_trans_control")
+                show_prod_shot_wagon_desc_trans = st.checkbox("Show Productive Shot (Wagon Desc)", value=True, key="wagon_desc_trans_prod")
+            
+            with col3:
+                st.markdown("## Run Filter (Wagon Zone)")
+
+                if "run_init_wagon_desc_trans" not in st.session_state:
+                    st.session_state.run_init_wagon_desc_trans = True
+                    for i in range(7):
+                        st.session_state[f'run_{i}_wagon_desc_trans'] = True
+                    st.session_state["run_all_wagon_desc_trans"] = True
+
+                def sync_all_to_individual_wagon_desc_trans():
+                    for i in range(7):
+                        st.session_state[f'run_{i}_wagon_desc_trans'] = st.session_state["run_all_wagon_desc_trans"]
+
+                def sync_individual_to_all_wagon_desc_trans():
+                    if all(st.session_state.get(f'run_{i}_wagon_desc_trans', False) for i in range(7)):
+                        st.session_state["run_all_wagon_desc_trans"] = True
+
+                st.checkbox("All", key="run_all_wagon_desc_trans", on_change=sync_all_to_individual_wagon_desc_trans)
+
+                for i in range(7):
+                    st.checkbox(str(i), key=f'run_{i}_wagon_desc_trans', on_change=sync_individual_to_all_wagon_desc_trans)
+
+                individual_selected_wagon_desc_trans = [i for i in range(7) if st.session_state.get(f'run_{i}_wagon_desc_trans', False)]
+
+                if st.session_state["run_all_wagon_desc_trans"]:
+                    filtered_runs_wagon_desc_trans = None
+                elif individual_selected_wagon_desc_trans:
+                    filtered_runs_wagon_desc_trans = individual_selected_wagon_desc_trans
+                else:
+                    filtered_runs_wagon_desc_trans = []
+
+            if filtered_runs_wagon_desc_trans == []:
+                st.warning("Please select at least one run value to display the plot.")
+            else:
+                fig_wagon_desc_trans = wagon_zone_plot_descriptive_transparent(
+                    df=df,
+                    player_name=selected_player_value,
+                    inns=selected_inns,
+                    mat_num=selected_mat_num,
+                    team_bat=selected_team_value,
+                    team_bowl=selected_team_bowl_value,
+                    run_values=filtered_runs_wagon_desc_trans,
+                    bowler_name=bowler_name,
+                    competition=selected_competition_value,
+                    transparent=True,
+                    date_from=date_from,
+                    date_to=date_to,
+                    show_title=show_title_wagon_desc_trans,
+                    show_summary=show_summary_wagon_desc_trans,
+                    runs_count=runs_count_wagon_desc_trans,
+                    show_fours_sixes=show_fours_sixes_wagon_desc_trans,
+                    show_control=show_control_wagon_desc_trans,
+                    show_prod_shot=show_prod_shot_wagon_desc_trans,
+                    show_bowler=show_bowler_wagon_desc_trans
+                )
+                with col2:
+                    st.pyplot(fig_wagon_desc_trans)
+            
+            with col1:
+                if fig_wagon_desc_trans:
+                    buf = BytesIO()
+                    fig_wagon_desc_trans.savefig(buf, format="png", transparent=True, dpi=300, bbox_inches='tight')
+                    buf.seek(0)
+                    st.download_button(
+                        label="📅 Download Plot as PNG",
+                        data=buf.getvalue(),
+                        file_name=f"{selected_player}_wagon_zone_descriptive_transparent.png",
+                        mime="image/png",
+                        key="wagon_desc_trans_download"
+                    )
+
         # ZIP Download Section
-        # After all 6 plot sections (around line 560)
+        # After all 8 plot sections
     # ===== DOWNLOAD ALL PLOTS AS ZIP =====
     if plot_types:
         st.markdown("---")
@@ -893,6 +1070,12 @@ if df is not None:
             
         if fig_wagon_desc is not None:
             all_figures[f"{selected_player}_wagon_zone_descriptive.png"] = fig_wagon_desc
+            
+        if fig_spike_desc_trans is not None:
+            all_figures[f"{selected_player}_spike_graph_descriptive_transparent.png"] = fig_spike_desc_trans
+            
+        if fig_wagon_desc_trans is not None:
+            all_figures[f"{selected_player}_wagon_zone_descriptive_transparent.png"] = fig_wagon_desc_trans
         
         if all_figures:
             player_text = selected_player if selected_player != "All" else "AllPlayers"
@@ -909,7 +1092,7 @@ if df is not None:
                 use_container_width=True
             )
             
-            st.info(f"✅ Ready to download {len(all_figures)} plot(s): {', '.join(all_figures.keys())}")
+            st.info(f"✅ Ready to download {len(all_figures)} plot(s)")
 
 else:
     st.info("Please select a dataset source to begin.")
