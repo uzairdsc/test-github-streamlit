@@ -268,7 +268,7 @@ if st.session_state.df is not None:
     #     type=["xlsx", "csv"],
     #     key="squad_upload"
     # )
-    squad_file = "/data/2026-T20IWC-Squads.xlsx"
+    squad_file = "data/2026-T20IWC-Squads.xlsx"
     # read the squad file from s3
 
 
@@ -1023,4 +1023,5 @@ if df is not None:
 
                 if st.session_state["run_all_spike_desc_trans"]:
                     filtere
+
 
