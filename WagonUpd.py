@@ -9,7 +9,7 @@ import pandas as pd
 def wagon_zone_plot(
     df, player_name=None, pid=None, inns=None, mat_num=None, bowler_name=None, team_bat=None, 
     team_bowl=None, run_values=None, competition=None, transparent=False, 
-    date_from=None, date_to=None,
+    date_from=None, date_to=None, over_values=None, phase=None, bowler_id=None,
     show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, 
     show_prod_shot=True,runs_count=True, show_bowler=True
 ):
@@ -36,6 +36,15 @@ def wagon_zone_plot(
     if inns:
         local_df = local_df[local_df['inns'] == inns] # inns
 
+    if bowler_id is not None:
+        local_df = local_df[local_df['p_bowl'] == bowler_id]
+
+        if not local_df.empty and bowler_name is None:
+            bowler_name = local_df['bowl'].iloc[0]
+    # Otherwise filter by bowler name
+    elif bowler_name is not None:
+        local_df = local_df[local_df['bowl'] == bowler_name]
+
     if bowler_name:
         local_df = local_df[local_df['bowl'] == bowler_name] #bowl
 
@@ -50,6 +59,19 @@ def wagon_zone_plot(
     #competition filter
     if competition:
         local_df = local_df[local_df['competition'] == competition]
+
+    # Filter by specific overs
+    if over_values is not None:
+        local_df = local_df[local_df['over'].isin(over_values)]
+
+    # Phase filter (takes priority over over_values if both provided)
+    if phase is not None:
+        if phase == 1 or phase == "Powerplay":
+            local_df = local_df[local_df['over'].between(1, 6)]
+        elif phase == 2 or phase == "Middle":
+            local_df = local_df[local_df['over'].between(7, 16)]
+        elif phase == 3 or phase == "Death":
+            local_df = local_df[local_df['over'].between(17, 20)]
 
     # Date range filter
     if date_from is not None:
@@ -337,6 +359,27 @@ def wagon_zone_plot(
         ax.text(430, 170, f"vs {bowler_name}", fontsize=11, ha='center',
                 color='blue', fontweight='bold')
 
+    # 1. Format Overs text
+    if over_values is None:
+        over_text = "All"
+    elif len(over_values) <= 10:
+        over_text = ", ".join(map(str, sorted(over_values)))
+    else:
+        over_text = f"{min(over_values)}-{max(over_values)} ({len(over_values)} overs)"
+
+    # 2. Format Phase text
+    phase_names = {
+        1: "Powerplay (1-6)",
+        2: "Middle (7-15)", 
+        3: "Death (16-20)"
+    }
+    phase_text = phase_names.get(phase, "All")
+
+    # 3. Display on plot (below productive shot at 430, 250)
+    ax.text(430, 300, f"Overs: {over_text}", 
+            fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
+    ax.text(430, 320, f"Phase: {phase_text}", 
+            fontsize=10, ha='center', color='crimson', fontweight='bold')
     
     # #  update the positions of the summary texts
     # if runs_count:
@@ -371,7 +414,7 @@ def wagon_zone_plot(
 def wagon_zone_plot_descriptive(
     df, player_name=None, pid=None, inns=None, mat_num=None, bowler_name=None, team_bat=None, 
     team_bowl=None, run_values=None, competition=None, transparent=False, 
-    date_from=None, date_to=None,
+    date_from=None, date_to=None, over_values=None, phase=None, bowler_id=None,
     show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, 
     show_prod_shot=True,runs_count=True, show_bowler=True
 ):
@@ -397,6 +440,15 @@ def wagon_zone_plot_descriptive(
     if inns:
         local_df = local_df[local_df['inns'] == inns] # inns
 
+    if bowler_id is not None:
+        local_df = local_df[local_df['p_bowl'] == bowler_id]
+
+        if not local_df.empty and bowler_name is None:
+            bowler_name = local_df['bowl'].iloc[0]
+    # Otherwise filter by bowler name
+    elif bowler_name is not None:
+        local_df = local_df[local_df['bowl'] == bowler_name]
+
     if bowler_name:
         local_df = local_df[local_df['bowl'] == bowler_name] #bowl
 
@@ -411,6 +463,19 @@ def wagon_zone_plot_descriptive(
     #competition filter
     if competition:
         local_df = local_df[local_df['competition'] == competition]
+
+    # Filter by specific overs
+    if over_values is not None:
+        local_df = local_df[local_df['over'].isin(over_values)]
+
+    # Phase filter (takes priority over over_values if both provided)
+    if phase is not None:
+        if phase == 1 or phase == "Powerplay":
+            local_df = local_df[local_df['over'].between(1, 6)]
+        elif phase == 2 or phase == "Middle":
+            local_df = local_df[local_df['over'].between(7, 16)]
+        elif phase == 3 or phase == "Death":
+            local_df = local_df[local_df['over'].between(17, 20)]
 
     # Date range filter
     if date_from is not None:
@@ -561,7 +626,7 @@ def wagon_zone_plot_descriptive(
     # ax.set_xlim(-20, 470)
     # ax.set_ylim(-50, 370)
     ax.set_xlim(-20, 380)
-    ax.set_ylim(-40, 520)
+    ax.set_ylim(-40, 560)
     ax.invert_yaxis()   
     ax.set_aspect('equal')
     ax.set_axis_off()
@@ -727,6 +792,29 @@ def wagon_zone_plot_descriptive(
         ax.text(300, 475, f" - vs {bowler_name}", fontsize=11, ha='center',
                 color='blue', fontweight='bold')
         
+    # 1. Format Overs text
+    if over_values is None:
+        over_text = "All"
+    elif len(over_values) <= 10:
+        over_text = ", ".join(map(str, sorted(over_values)))
+    else:
+        over_text = f"{min(over_values)}-{max(over_values)} ({len(over_values)} overs)"
+
+    # 2. Format Phase text
+    phase_names = {
+        1: "Powerplay (1-6)",
+        2: "Middle (7-15)", 
+        3: "Death (16-20)"
+    }
+    phase_text = phase_names.get(phase, "All")
+
+    # 3. Display on plot (below productive shot at 430, 250)
+    ax.text(100, 520, f"Overs: {over_text}", 
+            fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
+    ax.text(220, 520, f"Phase: {phase_text}", 
+            fontsize=10, ha='center', color='crimson', fontweight='bold')
+
+    
     # plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07)
     plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.02)
 
