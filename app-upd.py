@@ -95,7 +95,7 @@ def create_zip_of_plots(figures_dict):
 st.sidebar.header("📂 Select Dataset Source")
 data_source = st.sidebar.selectbox(
     "Choose data source:",
-    ["Upload Local File", "T20 Data for 2025", "Complete T20-T20I Data", "Local Storage - Complete T20 Data", "Local Data - Since 2024", "Local Data - Since 2024 WC"]
+    ["Upload Local File", "Preloaded 2026 T20 Data" ,"T20 Data for 2025 (S3)", "Complete T20-T20I Data (S3)", "Client Offline Storage - Complete T20 Data", "Client Offline Data - Since 2024", "Client Offline Data - Since 2024 WC"]
 )
 
 # Initialize session state for df
@@ -111,7 +111,7 @@ if data_source == "Upload Local File":
         st.session_state.df = df
         st.sidebar.success(f"Loaded {len(df):,} rows")
 
-elif data_source == "T20 Data for 2025":
+elif data_source == "T20 Data for 2025 (S3)":
     if "aws" in st.secrets:
         bucket = st.secrets["aws"]["bucket_name"]
         access_key = st.secrets["aws"]["access_key_id"]
@@ -135,7 +135,7 @@ elif data_source == "T20 Data for 2025":
     else:
         st.sidebar.warning("⚠️ AWS credentials not configured in secrets.toml")
 
-elif data_source == "Complete T20-T20I Data":
+elif data_source == "Complete T20-T20I Data (S3)":
     if "aws" in st.secrets:
         bucket = st.secrets["aws"]["bucket_name"]
         access_key = st.secrets["aws"]["access_key_id"]
@@ -159,7 +159,29 @@ elif data_source == "Complete T20-T20I Data":
     else:
         st.sidebar.warning("⚠️ AWS credentials not configured in secrets.toml")
 
-elif data_source == "Local Storage - Complete T20 Data":
+elif data_source == "Preloaded 2026 T20 Data":
+    local_file_path = st.sidebar.text_input(
+        "Enter local file path:",
+        value="data/t20_bbb_since_2026.csv"
+    )
+    
+    if st.sidebar.button("Load from Local Storage", key="load_local_complete"):
+        try:
+            with st.spinner(f"Loading data from {local_file_path}..."):
+                loaded_df = pd.read_csv(local_file_path, low_memory=False)
+                st.session_state.df = loaded_df
+                df = loaded_df
+                st.sidebar.success(f"Loaded {len(loaded_df):,} rows from local storage")
+        except FileNotFoundError:
+            st.sidebar.error(f"File not found: {local_file_path}")
+        except Exception as e:
+            st.sidebar.error(f"Error loading file: {str(e)}")
+    
+    # Show current loaded data info
+    if st.session_state.df is not None:
+        st.sidebar.info(f"Current data: {len(st.session_state.df):,} rows")
+
+elif data_source == "Client Offline Storage - Complete T20 Data":
     local_file_path = st.sidebar.text_input(
         "Enter local file path:",
         value="../data/daily_updated_t20_data/t20_bbb.csv"
@@ -181,7 +203,7 @@ elif data_source == "Local Storage - Complete T20 Data":
     if st.session_state.df is not None:
         st.sidebar.info(f"Current data: {len(st.session_state.df):,} rows")
 
-elif data_source == "Local Data - Since 2024":
+elif data_source == "Client Offline Data - Since 2024":
     local_file_path = st.sidebar.text_input(
         "Enter local file path:",
         value="../data/daily_updated_t20_data/t20_bbb_since_2024.csv"
@@ -203,7 +225,7 @@ elif data_source == "Local Data - Since 2024":
     if st.session_state.df is not None:
         st.sidebar.info(f"Current data: {len(st.session_state.df):,} rows")
 
-elif data_source == "Local Data - Since 2024 WC":
+elif data_source == "Client Offline Data - Since 2024 WC":
     local_file_path = st.sidebar.text_input(
         "Enter local file path:",
         value="../data/daily_updated_t20_data/t20_bbb_since_2024_WC.csv"
@@ -239,16 +261,17 @@ if st.session_state.df is not None:
     st.sidebar.header("📋 Batch Plot Generation")
     
     # Squad file upload
-    squad_file = st.sidebar.file_uploader(
-        "Upload Squad File (Excel/CSV)", 
-        type=["xlsx", "csv"],
-        key="squad_upload"
-    )
+    # squad_file = st.sidebar.file_uploader(
+    #     "Upload Squad File (Excel/CSV)", 
+    #     type=["xlsx", "csv"],
+    #     key="squad_upload"
+    # )
+    squad_file = "../data/daily_updated_t20_data/2026-T20IWC-Squads.xlsx"
     
     if squad_file:
         # Read squad file
         try:
-            if squad_file.name.endswith('.xlsx'):
+            if squad_file.endswith('.xlsx'):
                 squad_df = pd.read_excel(squad_file)
             else:
                 squad_df = pd.read_csv(squad_file)
@@ -265,15 +288,15 @@ if st.session_state.df is not None:
                 )
                 
                 # Get PIDs for selected team
-                if 'H-PID' in squad_df.columns:
-                    team_pids = squad_df[squad_df['Team'] == selected_squad_team]['H-PID'].tolist()
+                if 'Bt-ID' in squad_df.columns:
+                    team_pids = squad_df[squad_df['Team'] == selected_squad_team]['Bt-ID'].astype(str).tolist()
                     st.sidebar.info(f"{len(team_pids)} players in {selected_squad_team}")
                     
                     # Plot type selection
                     batch_plot_types = st.sidebar.multiselect(
                         "Select plots to generate:",
                         ["Spike Graph Plot", "Spike Graph Descriptive", "Wagon Zone Plot", "Wagon Zone Descriptive"],
-                        default=["Spike Graph Descriptive", "Wagon  Zone Descriptive"],
+                        default=["Spike Graph Descriptive", "Wagon Zone Descriptive"],
                         key="batch_plot_select"
                     )
                     
@@ -312,7 +335,7 @@ if st.session_state.df is not None:
                                     progress_bar.progress(progress)
                                     
                                     # Get player name
-                                    player_row = squad_df[squad_df['H-PID'] == pid]
+                                    player_row = squad_df[squad_df['Bt-ID'] == str(pid)]
                                     if not player_row.empty and 'Player' in squad_df.columns:
                                         player_name = player_row['Player'].iloc[0]
                                     else:
@@ -359,7 +382,10 @@ if st.session_state.df is not None:
                                             'team_bat': filter_team_bat_val,
                                             'team_bowl': filter_team_bowl_val,
                                             'bowler_name': filter_bowler_val,
+                                            'bowler_id': None,
                                             'run_values': None,
+                                            'over_values': None,
+                                            'phase': None,
                                             'transparent': batch_transparent,
                                             'show_title': True,
                                             'show_summary': True,
@@ -381,7 +407,10 @@ if st.session_state.df is not None:
                                             'team_bat': None,
                                             'team_bowl': None,
                                             'bowler_name': None,
+                                            'bowler_id': None,
                                             'run_values': None,
+                                            'over_values': None,
+                                            'phase': None,
                                             'transparent': batch_transparent,
                                             'show_title': True,
                                             'show_summary': True,
@@ -456,7 +485,7 @@ if st.session_state.df is not None:
                         else:
                             st.sidebar.warning("⚠️ Please select at least one plot type")
                 else:
-                    st.sidebar.error(" 'H-PID' column not found in squad file")
+                    st.sidebar.error(" 'Bt-ID' column not found in squad file")
             else:
                 st.sidebar.error(" 'Team' column not found in squad file")
         
@@ -474,8 +503,8 @@ if df is not None:
     st.markdown("---")
     st.subheader("Filter Options")
     
-    # Create 3 columns for filters
-    filter_col1, filter_col2, filter_col3 = st.columns(3)
+    # Create 4 columns for filters
+    filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
     
     # Initialize working dataframe
     working_df = df.copy()
@@ -527,7 +556,7 @@ if df is not None:
         else:
             selected_mat_num = None
     
-    # ===== COLUMN 2: Teams, Innings =====
+    # ===== COLUMN 2: Batting Team, Batter, Player ID =====
     with filter_col2:
         
         # Batting Team Filter (from working_df)
@@ -540,6 +569,29 @@ if df is not None:
             selected_team_value = selected_team
         else:
             selected_team_value = None
+        
+        # Player Filter (from working_df, only from selected batting team)
+        player_list = sorted(working_df['bat'].dropna().unique())
+        player_options = ["All"] + list(player_list)
+        selected_player = st.selectbox("Batter", player_options, index=0)
+        
+        if selected_player != "All":
+            selected_player_value = selected_player
+        else:
+            selected_player_value = None
+        
+        # PID Filter (dropdown with unique p_bat values)
+        pid_list = sorted(working_df['p_bat'].dropna().unique())
+        pid_options = ["All"] + [str(int(p)) for p in pid_list]
+        selected_pid_str = st.selectbox("Player ID (PID)", pid_options, index=0)
+        
+        if selected_pid_str != "All":
+            selected_pid = int(selected_pid_str)
+        else:
+            selected_pid = None
+    
+    # ===== COLUMN 3: Bowling Team, Bowler, Bowler PID =====
+    with filter_col3:
         
         # Bowling Team Filter (from working_df, excluding batting team)
         bowling_teams = sorted(working_df['team_bowl'].dropna().unique())
@@ -555,6 +607,29 @@ if df is not None:
         else:
             selected_team_bowl_value = None
         
+        # Bowler Filter (from working_df, only from bowling team)
+        bowler_list = sorted(working_df['bowl'].dropna().unique())
+        bowler_options = ["All"] + list(bowler_list)
+        selected_bowler = st.selectbox("Bowler", bowler_options, index=0)
+        
+        if selected_bowler != "All":
+            bowler_name = selected_bowler
+        else:
+            bowler_name = None
+        
+        # Bowler PID Filter (dropdown with unique p_bowl values)
+        bowl_pid_list = sorted(working_df['p_bowl'].dropna().unique())
+        bowl_pid_options = ["All"] + [str(int(p)) for p in bowl_pid_list]
+        selected_bowl_pid_str = st.selectbox("Bowler PID", bowl_pid_options, index=0)
+        
+        if selected_bowl_pid_str != "All":
+            bowler_id = int(selected_bowl_pid_str)
+        else:
+            bowler_id = None
+    
+    # ===== COLUMN 4: Innings, Overs, Phases =====
+    with filter_col4:
+        
         # Innings Filter (from working_df)
         innings_options = sorted(working_df['inns'].dropna().unique())
         innings_display = ["All"] + [str(int(i)) for i in innings_options]
@@ -565,40 +640,30 @@ if df is not None:
             working_df = working_df[working_df['inns'] == selected_inns]
         else:
             selected_inns = None
-    
-    # ===== COLUMN 3: Player, Bowler, PID =====
-    with filter_col3:
         
-        # PID Filter (numeric input)
-        selected_pid = st.number_input(
-            "Player ID (PID)",
-            min_value=0,
-            value=0,
-            step=1,
-            help="Enter numeric PID (e.g., 413242). If provided, takes priority over player name."
-        )
-        if selected_pid == 0:
-            selected_pid = None
-        
-        # Player Filter (from working_df, only from selected batting team)
-        player_list = sorted(working_df['bat'].dropna().unique())
-        player_options = ["All"] + list(player_list)
-        selected_player = st.selectbox("Player (Batter)", player_options, index=0)
-        
-        if selected_player != "All":
-            selected_player_value = selected_player
+        # Overs Filter (multiselect)
+        if 'over' in working_df.columns:
+            over_options = sorted(working_df['over'].dropna().unique())
+            selected_overs = st.multiselect(
+                "Overs",
+                options=[int(o) for o in over_options],
+                default=None,
+                help="Select specific overs (leave empty for all)"
+            )
+            over_values = selected_overs if selected_overs else None
         else:
-            selected_player_value = None
+            over_values = None
         
-        # Bowler Filter (from working_df, only from bowling team)
-        bowler_list = sorted(working_df['bowl'].dropna().unique())
-        bowler_options = ["All"] + list(bowler_list)
-        selected_bowler = st.selectbox("Bowler", bowler_options, index=0)
+        # Phase Filter (dropdown)
+        phase_options = ["All", "Powerplay (1-6)", "Middle (7-15)", "Death (16-20)"]
+        selected_phase_str = st.selectbox("Phase", phase_options, index=0)
         
-        if selected_bowler != "All":
-            bowler_name = selected_bowler
-        else:
-            bowler_name = None
+        phase_map = {
+            "Powerplay (1-6)": 1,
+            "Middle (7-15)": 2,
+            "Death (16-20)": 3
+        }
+        phase = phase_map.get(selected_phase_str, None)
     
     # ===== DATA VALIDATION =====
     st.markdown("---")
@@ -691,8 +756,11 @@ if df is not None:
                     team_bowl=selected_team_bowl_value,
                     run_values=filtered_runs_spike,
                     bowler_name=bowler_name,
+                    bowler_id=bowler_id,
                     competition=selected_competition_value,
                     transparent=False,
+                    over_values=over_values,
+                    phase=phase,
                     date_from=date_from,
                     date_to=date_to,
                     show_title=show_title,
@@ -782,8 +850,11 @@ if df is not None:
                     team_bowl=selected_team_bowl_value,
                     run_values=filtered_runs_spike_trans,
                     bowler_name=bowler_name,
+                    bowler_id=bowler_id,
                     competition=selected_competition_value,
                     transparent=True,
+                    over_values=over_values,
+                    phase=phase,
                     date_from=date_from,
                     date_to=date_to,
                     show_title=show_title_trans,
@@ -872,8 +943,11 @@ if df is not None:
                     team_bowl=selected_team_bowl_value,
                     run_values=filtered_runs_spike_desc,
                     bowler_name=bowler_name,
+                    bowler_id=bowler_id,
                     competition=selected_competition_value,
                     transparent=False,
+                    over_values=over_values,
+                    phase=phase,
                     date_from=date_from,
                     date_to=date_to,
                     show_title=show_title_desc,
@@ -915,4 +989,494 @@ if df is not None:
                 show_fours_sixes_desc_trans = st.checkbox("Show 4s and 6s", value=True, key="spike_desc_trans_fs")
                 show_bowler_desc_trans = st.checkbox("Show Bowler", value=True, key="spike_desc_trans_bowler")
                 show_control_desc_trans = st.checkbox("Show Control %", value=True, key="spike_desc_trans_control")
-                show_prod_shot_desc_
+                show_prod_shot_desc_trans = st.checkbox("Show Productive Shot", value=True, key="spike_desc_trans_prod")
+                show_ground_desc_trans = st.checkbox("Show Ground Image", value=True, key="spike_desc_trans_ground")
+
+            with col3:
+                st.markdown("## Run Filter (Spike Graph)")
+
+                if "run_init_spike_desc_trans" not in st.session_state:
+                    st.session_state.run_init_spike_desc_trans = True
+                    for i in range(7):
+                        st.session_state[f'run_{i}_spike_desc_trans'] = True
+                    st.session_state["run_all_spike_desc_trans"] = True
+
+                def sync_all_to_individual_spike_desc_trans():
+                    for i in range(7):
+                        st.session_state[f'run_{i}_spike_desc_trans'] = st.session_state["run_all_spike_desc_trans"]
+
+                def sync_individual_to_all_spike_desc_trans():
+                    if all(st.session_state.get(f'run_{i}_spike_desc_trans', False) for i in range(7)):
+                        st.session_state["run_all_spike_desc_trans"] = True
+
+                st.checkbox("All", key="run_all_spike_desc_trans", on_change=sync_all_to_individual_spike_desc_trans)
+
+                for i in range(7):
+                    st.checkbox(str(i), key=f'run_{i}_spike_desc_trans', on_change=sync_individual_to_all_spike_desc_trans)
+
+                individual_selected_spike_desc_trans = [i for i in range(7) if st.session_state.get(f'run_{i}_spike_desc_trans', False)]
+
+                if st.session_state["run_all_spike_desc_trans"]:
+                    filtered_runs_spike_desc_trans = None
+                elif individual_selected_spike_desc_trans:
+                    filtered_runs_spike_desc_trans = individual_selected_spike_desc_trans
+                else:
+                    filtered_runs_spike_desc_trans = []
+                    
+            if filtered_runs_spike_desc_trans == []:
+                st.warning("Please select at least one run value to display the plot.")
+            else:
+                fig_spike_desc_trans = spike_graph_plot_descriptive(
+                    df=df,
+                    player_name=selected_player_value,
+                    pid=selected_pid,
+                    inns=selected_inns,
+                    mat_num=selected_mat_num,
+                    team_bat=selected_team_value,
+                    team_bowl=selected_team_bowl_value,
+                    run_values=filtered_runs_spike_desc_trans,
+                    bowler_name=bowler_name,
+                    bowler_id=bowler_id,
+                    competition=selected_competition_value,
+                    transparent=True,
+                    over_values=over_values,
+                    phase=phase,
+                    date_from=date_from,
+                    date_to=date_to,
+                    show_title=show_title_desc_trans,
+                    show_summary=show_summary_desc_trans,
+                    show_legend=show_legend_desc_trans,
+                    runs_count=runs_count_desc_trans,
+                    show_fours_sixes=show_fours_sixes_desc_trans,
+                    show_control=show_control_desc_trans,
+                    show_prod_shot=show_prod_shot_desc_trans,
+                    show_bowler=show_bowler_desc_trans,
+                    show_ground=show_ground_desc_trans
+                )
+                with col2:
+                    st.pyplot(fig_spike_desc_trans)
+            
+            with col1:
+                if fig_spike_desc_trans:
+                    buf = BytesIO()
+                    fig_spike_desc_trans.savefig(buf, format="png", transparent=True, dpi=300, bbox_inches='tight')
+                    buf.seek(0)
+                    st.download_button(
+                        label="📅 Download Plot as PNG",
+                        data=buf.getvalue(),
+                        file_name=f"{selected_player}_spike_graph_descriptive_transparent.png",
+                        mime="image/png",
+                        key="spike_desc_trans_download"
+                    )
+
+        if "Wagon Zone Plot (White Background)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Wagon Zone Plot (White Background)</h2>", unsafe_allow_html=True)
+            col1, col2, col3 = st.columns([2, 2, 2])
+            
+            with col1:
+                st.markdown("## Customize Plot Info")    
+                show_title_wagon = st.checkbox("Show Plot Title (Wagon)", value=True, key="wagon_title")
+                show_summary_wagon = st.checkbox("Show Runs Summary (Wagon)", value=True, key="wagon_summary")
+                runs_count_wagon = st.checkbox("Show Total Runs (Wagon)", value=True, key="wagon_total")
+                show_fours_sixes_wagon = st.checkbox("Show 4s and 6s (Wagon)", value=True, key="wagon_fs")
+                show_bowler_wagon = st.checkbox("Show Bowler (Wagon)", value=True, key="wagon_bowler")
+                show_control_wagon = st.checkbox("Show Control % (Wagon)", value=True, key="wagon_ctrl")
+                show_prod_shot_wagon = st.checkbox("Show Productive Shot (Wagon)", value=True, key="wagon_prod")
+            
+            with col3:
+                st.markdown("## Run Filter (Wagon Plot)")
+
+                if "run_init_wagon" not in st.session_state:
+                    st.session_state["run_all_wagon"] = True
+                    for i in range(7):
+                        st.session_state[f'run_{i}_wagon'] = True
+                    st.session_state["run_init_wagon"] = True
+
+                def sync_all_to_individual_wagon():
+                    all_selected = st.session_state["run_all_wagon"]
+                    for i in range(7):
+                        st.session_state[f'run_{i}_wagon'] = all_selected
+
+                def sync_individual_to_all_wagon():
+                    all_selected = all(st.session_state[f'run_{i}_wagon'] for i in range(7))
+                    st.session_state["run_all_wagon"] = all_selected
+
+                st.checkbox("All", key="run_all_wagon", on_change=sync_all_to_individual_wagon)
+
+                for i in range(7):
+                    st.checkbox(str(i), key=f'run_{i}_wagon', on_change=sync_individual_to_all_wagon)
+
+                individual_selected_wagon = [i for i in range(7) if st.session_state.get(f'run_{i}_wagon', False)]
+
+                if st.session_state["run_all_wagon"]:
+                    filtered_runs_wagon = None
+                elif individual_selected_wagon:
+                    filtered_runs_wagon = individual_selected_wagon
+                else:
+                    filtered_runs_wagon = []
+
+            if filtered_runs_wagon == []:
+                st.warning("Please select at least one run value to display the plot.")
+            else:
+                with col2:
+                    fig_wagon = wagon_zone_plot(
+                        df=df,
+                        player_name=selected_player_value,
+                        pid=selected_pid,
+                        inns=selected_inns,
+                        mat_num=selected_mat_num,
+                        team_bat=selected_team_value,
+                        team_bowl=selected_team_bowl_value,
+                        bowler_name=bowler_name,
+                        bowler_id=bowler_id,
+                        run_values=filtered_runs_wagon,
+                        competition=selected_competition_value,
+                        transparent=False,
+                        over_values=over_values,
+                        phase=phase,
+                        date_from=date_from,
+                        date_to=date_to,
+                        show_title=show_title_wagon,
+                        show_summary=show_summary_wagon,
+                        runs_count=runs_count_wagon,
+                        show_fours_sixes=show_fours_sixes_wagon,
+                        show_control=show_control_wagon,
+                        show_prod_shot=show_prod_shot_wagon,
+                        show_bowler=show_bowler_wagon,
+                    )
+                    st.pyplot(fig_wagon)
+            
+            with col1:
+                if fig_wagon:
+                    buf = BytesIO()
+                    fig_wagon.savefig(buf, format="png", transparent=False, dpi=300, bbox_inches='tight')
+                    buf.seek(0)
+                    st.download_button(
+                        label="📅 Download Plot as PNG",
+                        data=buf.getvalue(),
+                        file_name=f"{selected_player}_wagon_plot.png",
+                        mime="image/png",
+                        key="wagon_download"
+                    )
+
+        if "Wagon Zone Plot (Transparent Background)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Wagon Zone Plot (Transparent Background)</h2>", unsafe_allow_html=True)
+            col1, col2, col3 = st.columns([2, 2, 2])
+            
+            with col1:
+                st.markdown("## Customize Plot Info")    
+                show_title_wagon_trans = st.checkbox("Show Plot Title (Wagon)", value=True, key="wagon_trans_title")
+                show_summary_wagon_trans = st.checkbox("Show Runs Summary (Wagon)", value=True, key="wagon_trans_summary")
+                runs_count_wagon_trans = st.checkbox("Show Total Runs (Wagon)", value=True, key="wagon_trans_total")
+                show_fours_sixes_wagon_trans = st.checkbox("Show 4s and 6s (Wagon)", value=True, key="wagon_trans_fs")
+                show_bowler_wagon_trans = st.checkbox("Show Bowler (Wagon)", value=True, key="wagon_trans_bowler")
+                show_control_wagon_trans = st.checkbox("Show Control % (Wagon)", value=True, key="wagon_trans_ctrl")
+                show_prod_shot_wagon_trans = st.checkbox("Show Productive Shot (Wagon)", value=True, key="wagon_trans_prod")
+            
+            with col3:
+                st.markdown("## Run Filter (Wagon Plot)")
+
+                if "run_init_wagon_trans" not in st.session_state:
+                    st.session_state["run_all_wagon_trans"] = True
+                    for i in range(7):
+                        st.session_state[f'run_{i}_wagon_trans'] = True
+                    st.session_state["run_init_wagon_trans"] = True
+
+                def sync_all_to_individual_wagon_trans():
+                    all_selected = st.session_state["run_all_wagon_trans"]
+                    for i in range(7):
+                        st.session_state[f'run_{i}_wagon_trans'] = all_selected
+
+                def sync_individual_to_all_wagon_trans():
+                    all_selected = all(st.session_state[f'run_{i}_wagon_trans'] for i in range(7))
+                    st.session_state["run_all_wagon_trans"] = all_selected
+
+                st.checkbox("All", key="run_all_wagon_trans", on_change=sync_all_to_individual_wagon_trans)
+
+                for i in range(7):
+                    st.checkbox(str(i), key=f'run_{i}_wagon_trans', on_change=sync_individual_to_all_wagon_trans)
+
+                individual_selected_wagon_trans = [i for i in range(7) if st.session_state.get(f'run_{i}_wagon_trans', False)]
+
+                if st.session_state["run_all_wagon_trans"]:
+                    filtered_runs_wagon_trans = None
+                elif individual_selected_wagon_trans:
+                    filtered_runs_wagon_trans = individual_selected_wagon_trans
+                else:
+                    filtered_runs_wagon_trans = []
+
+            if filtered_runs_wagon_trans == []:
+                st.warning("Please select at least one run value to display the plot.")
+            else:
+                with col2:
+                    fig_wagon_trans = wagon_zone_plot(
+                        df=df,
+                        player_name=selected_player_value,
+                        pid=selected_pid,
+                        inns=selected_inns,
+                        mat_num=selected_mat_num,
+                        team_bat=selected_team_value,
+                        team_bowl=selected_team_bowl_value,
+                        bowler_name=bowler_name,
+                        bowler_id=bowler_id,
+                        run_values=filtered_runs_wagon_trans,
+                        competition=selected_competition_value,
+                        transparent=True,
+                        over_values=over_values,
+                        phase=phase,
+                        date_from=date_from,
+                        date_to=date_to,
+                        show_title=show_title_wagon_trans,
+                        show_summary=show_summary_wagon_trans,
+                        runs_count=runs_count_wagon_trans,
+                        show_fours_sixes=show_fours_sixes_wagon_trans,
+                        show_control=show_control_wagon_trans,
+                        show_prod_shot=show_prod_shot_wagon_trans,
+                        show_bowler=show_bowler_wagon_trans,
+                    )
+                    st.pyplot(fig_wagon_trans)
+            
+            with col1:
+                if fig_wagon_trans:
+                    buf = BytesIO()
+                    fig_wagon_trans.savefig(buf, format="png", transparent=True, dpi=300, bbox_inches='tight')
+                    buf.seek(0)
+                    st.download_button(
+                        label="📅 Download Plot as PNG",
+                        data=buf.getvalue(),
+                        file_name=f"{selected_player}_wagon_plot_transparent.png",
+                        mime="image/png",
+                        key="wagon_trans_download"
+                    )
+
+        if "Wagon Zone Descriptive" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Wagon Zone Descriptive</h2>", unsafe_allow_html=True)
+            col1, col2, col3 = st.columns([2, 2, 2])
+            
+            with col1:
+                st.markdown("## Customize Plot Info")
+                show_title_wagon_desc = st.checkbox("Show Plot Title (Wagon Desc)", value=True, key="wagon_desc_title")
+                show_summary_wagon_desc = st.checkbox("Show Runs Summary (Wagon Desc)", value=True, key="wagon_desc_summary")
+                runs_count_wagon_desc = st.checkbox("Show Runs Count (Wagon Desc)", value=True, key="wagon_desc_runs")
+                show_fours_sixes_wagon_desc = st.checkbox("Show 4s and 6s (Wagon Desc)", value=True, key="wagon_desc_fs")
+                show_bowler_wagon_desc = st.checkbox("Show Bowler (Wagon Desc)", value=True, key="wagon_desc_bowler")
+                show_control_wagon_desc = st.checkbox("Show Control % (Wagon Desc)", value=True, key="wagon_desc_control")
+                show_prod_shot_wagon_desc = st.checkbox("Show Productive Shot (Wagon Desc)", value=True, key="wagon_desc_prod")
+            
+            with col3:
+                st.markdown("## Run Filter (Wagon Zone)")
+
+                if "run_init_wagon_desc" not in st.session_state:
+                    st.session_state.run_init_wagon_desc = True
+                    for i in range(7):
+                        st.session_state[f'run_{i}_wagon_desc'] = True
+                    st.session_state["run_all_wagon_desc"] = True
+
+                def sync_all_to_individual_wagon_desc():
+                    for i in range(7):
+                        st.session_state[f'run_{i}_wagon_desc'] = st.session_state["run_all_wagon_desc"]
+
+                def sync_individual_to_all_wagon_desc():
+                    if all(st.session_state.get(f'run_{i}_wagon_desc', False) for i in range(7)):
+                        st.session_state["run_all_wagon_desc"] = True
+
+                st.checkbox("All", key="run_all_wagon_desc", on_change=sync_all_to_individual_wagon_desc)
+
+                for i in range(7):
+                    st.checkbox(str(i), key=f'run_{i}_wagon_desc', on_change=sync_individual_to_all_wagon_desc)
+
+                individual_selected_wagon_desc = [i for i in range(7) if st.session_state.get(f'run_{i}_wagon_desc', False)]
+
+                if st.session_state["run_all_wagon_desc"]:
+                    filtered_runs_wagon_desc = None
+                elif individual_selected_wagon_desc:
+                    filtered_runs_wagon_desc = individual_selected_wagon_desc
+                else:
+                    filtered_runs_wagon_desc = []
+
+            if filtered_runs_wagon_desc == []:
+                st.warning("Please select at least one run value to display the plot.")
+            else:
+                fig_wagon_desc = wagon_zone_plot_descriptive(
+                    df=df,
+                    player_name=selected_player_value,
+                    pid=selected_pid,
+                    inns=selected_inns,
+                    mat_num=selected_mat_num,
+                    team_bat=selected_team_value,
+                    team_bowl=selected_team_bowl_value,
+                    run_values=filtered_runs_wagon_desc,
+                    bowler_name=bowler_name,
+                    bowler_id=bowler_id,
+                    competition=selected_competition_value,
+                    transparent=False,
+                    over_values=over_values,
+                    phase=phase,
+                    date_from=date_from,
+                    date_to=date_to,
+                    show_title=show_title_wagon_desc,
+                    show_summary=show_summary_wagon_desc,
+                    runs_count=runs_count_wagon_desc,
+                    show_fours_sixes=show_fours_sixes_wagon_desc,
+                    show_control=show_control_wagon_desc,
+                    show_prod_shot=show_prod_shot_wagon_desc,
+                    show_bowler=show_bowler_wagon_desc
+                )
+                with col2:
+                    st.pyplot(fig_wagon_desc)
+            
+            with col1:
+                if fig_wagon_desc:
+                    buf = BytesIO()
+                    fig_wagon_desc.savefig(buf, format="png", transparent=False, dpi=300, bbox_inches='tight')
+                    buf.seek(0)
+                    st.download_button(
+                        label="📅 Download Plot as PNG",
+                        data=buf.getvalue(),
+                        file_name=f"{selected_player}_wagon_zone_descriptive.png",
+                        mime="image/png",
+                        key="wagon_desc_download"
+                    )
+
+        if "Wagon Zone Descriptive (Transparent)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Wagon Zone Descriptive (Transparent)</h2>", unsafe_allow_html=True)
+            col1, col2, col3 = st.columns([2, 2, 2])
+            
+            with col1:
+                st.markdown("## Customize Plot Info")
+                show_title_wagon_desc_trans = st.checkbox("Show Plot Title (Wagon Desc)", value=True, key="wagon_desc_trans_title")
+                show_summary_wagon_desc_trans = st.checkbox("Show Runs Summary (Wagon Desc)", value=True, key="wagon_desc_trans_summary")
+                runs_count_wagon_desc_trans = st.checkbox("Show Runs Count (Wagon Desc)", value=True, key="wagon_desc_trans_runs")
+                show_fours_sixes_wagon_desc_trans = st.checkbox("Show 4s and 6s (Wagon Desc)", value=True, key="wagon_desc_trans_fs")
+                show_bowler_wagon_desc_trans = st.checkbox("Show Bowler (Wagon Desc)", value=True, key="wagon_desc_trans_bowler")
+                show_control_wagon_desc_trans = st.checkbox("Show Control % (Wagon Desc)", value=True, key="wagon_desc_trans_control")
+                show_prod_shot_wagon_desc_trans = st.checkbox("Show Productive Shot (Wagon Desc)", value=True, key="wagon_desc_trans_prod")
+            
+            with col3:
+                st.markdown("## Run Filter (Wagon Zone)")
+
+                if "run_init_wagon_desc_trans" not in st.session_state:
+                    st.session_state.run_init_wagon_desc_trans = True
+                    for i in range(7):
+                        st.session_state[f'run_{i}_wagon_desc_trans'] = True
+                    st.session_state["run_all_wagon_desc_trans"] = True
+
+                def sync_all_to_individual_wagon_desc_trans():
+                    for i in range(7):
+                        st.session_state[f'run_{i}_wagon_desc_trans'] = st.session_state["run_all_wagon_desc_trans"]
+
+                def sync_individual_to_all_wagon_desc_trans():
+                    if all(st.session_state.get(f'run_{i}_wagon_desc_trans', False) for i in range(7)):
+                        st.session_state["run_all_wagon_desc_trans"] = True
+
+                st.checkbox("All", key="run_all_wagon_desc_trans", on_change=sync_all_to_individual_wagon_desc_trans)
+
+                for i in range(7):
+                    st.checkbox(str(i), key=f'run_{i}_wagon_desc_trans', on_change=sync_individual_to_all_wagon_desc_trans)
+
+                individual_selected_wagon_desc_trans = [i for i in range(7) if st.session_state.get(f'run_{i}_wagon_desc_trans', False)]
+
+                if st.session_state["run_all_wagon_desc_trans"]:
+                    filtered_runs_wagon_desc_trans = None
+                elif individual_selected_wagon_desc_trans:
+                    filtered_runs_wagon_desc_trans = individual_selected_wagon_desc_trans
+                else:
+                    filtered_runs_wagon_desc_trans = []
+
+            if filtered_runs_wagon_desc_trans == []:
+                st.warning("Please select at least one run value to display the plot.")
+            else:
+                fig_wagon_desc_trans = wagon_zone_plot_descriptive(
+                    df=df,
+                    player_name=selected_player_value,
+                    pid=selected_pid,
+                    inns=selected_inns,
+                    mat_num=selected_mat_num,
+                    team_bat=selected_team_value,
+                    team_bowl=selected_team_bowl_value,
+                    run_values=filtered_runs_wagon_desc_trans,
+                    bowler_name=bowler_name,
+                    bowler_id=bowler_id,
+                    competition=selected_competition_value,
+                    transparent=True,
+                    over_values=over_values,
+                    phase=phase,
+                    date_from=date_from,
+                    date_to=date_to,
+                    show_title=show_title_wagon_desc_trans,
+                    show_summary=show_summary_wagon_desc_trans,
+                    runs_count=runs_count_wagon_desc_trans,
+                    show_fours_sixes=show_fours_sixes_wagon_desc_trans,
+                    show_control=show_control_wagon_desc_trans,
+                    show_prod_shot=show_prod_shot_wagon_desc_trans,
+                    show_bowler=show_bowler_wagon_desc_trans
+                )
+                with col2:
+                    st.pyplot(fig_wagon_desc_trans)
+            
+            with col1:
+                if fig_wagon_desc_trans:
+                    buf = BytesIO()
+                    fig_wagon_desc_trans.savefig(buf, format="png", transparent=True, dpi=300, bbox_inches='tight')
+                    buf.seek(0)
+                    st.download_button(
+                        label="📅 Download Plot as PNG",
+                        data=buf.getvalue(),
+                        file_name=f"{selected_player}_wagon_zone_descriptive_transparent.png",
+                        mime="image/png",
+                        key="wagon_desc_trans_download"
+                    )
+
+        # ZIP Download Section
+        # After all 8 plot sections
+    # ===== DOWNLOAD ALL PLOTS AS ZIP =====
+    if plot_types:
+        st.markdown("---")
+        st.markdown("### 📦 Download All Generated Plots")
+        
+        # Collect all generated figures
+        all_figures = {}
+        
+        if fig_spike is not None:
+            all_figures[f"{selected_player}_spike_plot.png"] = fig_spike
+            
+        if fig_spike_trans is not None:
+            all_figures[f"{selected_player}_spike_plot_transparent.png"] = fig_spike_trans
+            
+        if fig_spike_desc is not None:
+            all_figures[f"{selected_player}_spike_graph_descriptive.png"] = fig_spike_desc
+            
+        if fig_wagon is not None:
+            all_figures[f"{selected_player}_wagon_plot.png"] = fig_wagon
+            
+        if fig_wagon_trans is not None:
+            all_figures[f"{selected_player}_wagon_plot_transparent.png"] = fig_wagon_trans
+            
+        if fig_wagon_desc is not None:
+            all_figures[f"{selected_player}_wagon_zone_descriptive.png"] = fig_wagon_desc
+            
+        if fig_spike_desc_trans is not None:
+            all_figures[f"{selected_player}_spike_graph_descriptive_transparent.png"] = fig_spike_desc_trans
+            
+        if fig_wagon_desc_trans is not None:
+            all_figures[f"{selected_player}_wagon_zone_descriptive_transparent.png"] = fig_wagon_desc_trans
+        
+        if all_figures:
+            player_text = selected_player if selected_player != "All" else "AllPlayers"
+            zip_filename = f"{player_text}_Cricket_Plots.zip"
+            
+            zip_buffer = create_zip_of_plots(all_figures)
+            
+            st.download_button(
+                label=f"📦 Download All Plots as ZIP ({len(all_figures)} plots)",
+                data=zip_buffer.getvalue(),
+                file_name=zip_filename,
+                mime="application/zip",
+                key="download_all_zip",
+                use_container_width=True
+            )
+            
+            st.info(f"Ready to download {len(all_figures)} plot(s)")
+
+else:
+    st.info("Please select a dataset source to begin.")
