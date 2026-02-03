@@ -95,7 +95,7 @@ def create_zip_of_plots(figures_dict):
 st.sidebar.header("📂 Select Dataset Source")
 data_source = st.sidebar.selectbox(
     "Choose data source:",
-    ["Upload Local File", "S3_since26" ,"S3_since24", "S3_since24WC", "S3_all", "Cache_all", "Cache_since24", "Cache_since24WC"]
+    ["Upload Data File", "S3_since26" ,"S3_since24", "S3_since24WC", "S3_all", "Cache_all", "Cache_since24", "Cache_since24WC"]
 )
 
 # Initialize session state for df
@@ -104,7 +104,7 @@ if 'df' not in st.session_state:
 
 df = st.session_state.df
 
-if data_source == "Upload Local File":
+if data_source == "Upload Data File":
     uploaded_file = st.sidebar.file_uploader("Upload CSV File", type=["csv"])
     if uploaded_file:
         df = pd.read_csv(uploaded_file, low_memory=False)
@@ -1506,3 +1506,4 @@ if df is not None:
 
 else:
     st.info("Please select a dataset source to begin.")
+
