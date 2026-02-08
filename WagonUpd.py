@@ -8,10 +8,10 @@ import pandas as pd
 
 def wagon_zone_plot(
     df, player_name=None, pid=None, inns=None, mat_num=None, bowler_name=None, team_bat=None, 
-    team_bowl=None, run_values=None, competition=None, transparent=False, 
+    team_bowl=None, run_values=None, competition=None, transparent=False, ground=None,
     date_from=None, date_to=None, over_values=None, phase=None, bowler_id=None,
     show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, 
-    show_prod_shot=True,runs_count=True, show_bowler=True
+    show_prod_shot=True,runs_count=True, show_bowler=True, show_overs_phase=True
 ):
     # ---- Apply Filters for Plotting ----
     local_df = df.copy()
@@ -80,6 +80,10 @@ def wagon_zone_plot(
     if date_to is not None:
         local_df = local_df[local_df['date'] <= pd.to_datetime(date_to)]
 
+
+    #ground filter
+    if ground is not None:
+        local_df = local_df[local_df['ground'] == ground]
 
     if player_name is None:
         innings_valid_balls = local_df.copy()  # include all for team
@@ -359,27 +363,28 @@ def wagon_zone_plot(
         ax.text(430, 170, f"vs {bowler_name}", fontsize=11, ha='center',
                 color='blue', fontweight='bold')
 
-    # 1. Format Overs text
-    if over_values is None:
-        over_text = "All"
-    elif len(over_values) <= 10:
-        over_text = ", ".join(map(str, sorted(over_values)))
-    else:
-        over_text = f"{min(over_values)}-{max(over_values)} ({len(over_values)} overs)"
+    if show_overs_phase:
+        # 1. Format Overs text
+        if over_values is None:
+            over_text = "All"
+        elif len(over_values) <= 10:
+            over_text = ", ".join(map(str, sorted(over_values)))
+        else:
+            over_text = f"{min(over_values)}-{max(over_values)} ({len(over_values)} overs)"
 
-    # 2. Format Phase text
-    phase_names = {
-        1: "Powerplay (1-6)",
-        2: "Middle (7-15)", 
-        3: "Death (16-20)"
-    }
-    phase_text = phase_names.get(phase, "All")
+        # 2. Format Phase text
+        phase_names = {
+            1: "Powerplay (1-6)",
+            2: "Middle (7-15)", 
+            3: "Death (16-20)"
+        }
+        phase_text = phase_names.get(phase, "All")
 
-    # 3. Display on plot (below productive shot at 430, 250)
-    ax.text(430, 300, f"Overs: {over_text}", 
-            fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
-    ax.text(430, 320, f"Phase: {phase_text}", 
-            fontsize=10, ha='center', color='crimson', fontweight='bold')
+        # 3. Display on plot (below productive shot at 430, 250)
+        ax.text(430, 300, f"Overs: {over_text}", 
+                fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
+        ax.text(430, 320, f"Phase: {phase_text}", 
+                fontsize=10, ha='center', color='crimson', fontweight='bold')
     
     # #  update the positions of the summary texts
     # if runs_count:
@@ -413,10 +418,10 @@ def wagon_zone_plot(
 
 def wagon_zone_plot_descriptive(
     df, player_name=None, pid=None, inns=None, mat_num=None, bowler_name=None, team_bat=None, 
-    team_bowl=None, run_values=None, competition=None, transparent=False, 
+    team_bowl=None, run_values=None, competition=None, transparent=False, ground=None,
     date_from=None, date_to=None, over_values=None, phase=None, bowler_id=None,
     show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, 
-    show_prod_shot=True,runs_count=True, show_bowler=True
+    show_prod_shot=True,runs_count=True, show_bowler=True, show_overs_phase=True
 ):
     # ---- Apply Filters for Plotting ----
     local_df = df.copy()
@@ -484,6 +489,9 @@ def wagon_zone_plot_descriptive(
     if date_to is not None:
         local_df = local_df[local_df['date'] <= pd.to_datetime(date_to)]
 
+    #ground filter
+    if ground is not None:
+        local_df = local_df[local_df['ground'] == ground]
 
     if player_name is None:
         innings_valid_balls = local_df.copy()  # include all for team
@@ -792,27 +800,28 @@ def wagon_zone_plot_descriptive(
         ax.text(300, 475, f" - vs {bowler_name}", fontsize=11, ha='center',
                 color='blue', fontweight='bold')
         
-    # 1. Format Overs text
-    if over_values is None:
-        over_text = "All"
-    elif len(over_values) <= 10:
-        over_text = ", ".join(map(str, sorted(over_values)))
-    else:
-        over_text = f"{min(over_values)}-{max(over_values)} ({len(over_values)} overs)"
+    if show_overs_phase:
+        # 1. Format Overs text
+        if over_values is None:
+            over_text = "All"
+        elif len(over_values) <= 10:
+            over_text = ", ".join(map(str, sorted(over_values)))
+        else:
+            over_text = f"{min(over_values)}-{max(over_values)} ({len(over_values)} overs)"
 
-    # 2. Format Phase text
-    phase_names = {
-        1: "Powerplay (1-6)",
-        2: "Middle (7-15)", 
-        3: "Death (16-20)"
-    }
-    phase_text = phase_names.get(phase, "All")
+        # 2. Format Phase text
+        phase_names = {
+            1: "Powerplay (1-6)",
+            2: "Middle (7-15)", 
+            3: "Death (16-20)"
+        }
+        phase_text = phase_names.get(phase, "All")
 
-    # 3. Display on plot (below productive shot at 430, 250)
-    ax.text(100, 520, f"Overs: {over_text}", 
-            fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
-    ax.text(220, 520, f"Phase: {phase_text}", 
-            fontsize=10, ha='center', color='crimson', fontweight='bold')
+        # 3. Display on plot (below productive shot at 430, 250)
+        ax.text(100, 520, f"Overs: {over_text}", 
+                fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
+        ax.text(220, 520, f"Phase: {phase_text}", 
+                fontsize=10, ha='center', color='crimson', fontweight='bold')
 
     
     # plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07)
