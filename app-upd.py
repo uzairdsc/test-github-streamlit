@@ -281,6 +281,7 @@ if st.session_state.df is not None:
         st.rerun()
         
 
+
 # ===== BATCH PLOT GENERATION SECTION =====
 if st.session_state.df is not None:
     st.sidebar.markdown("---")
@@ -292,7 +293,7 @@ if st.session_state.df is not None:
     #     type=["xlsx", "csv"],
     #     key="squad_upload"
     # )
-    squad_file = "data/2026-WT20-Squads.xlsx"
+    squad_file = "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx"
 
     if squad_file:
         # Read squad file
@@ -421,7 +422,8 @@ if st.session_state.df is not None:
                                             'show_control': True,
                                             'show_prod_shot': True,
                                             'show_bowler': True,
-                                            'show_ground': True
+                                            'show_ground': True,
+                                            'show_overs_phase': True
                                         }
                                     else:
                                         batch_filters = {
@@ -446,7 +448,8 @@ if st.session_state.df is not None:
                                             'show_control': True,
                                             'show_prod_shot': True,
                                             'show_bowler': True,
-                                            'show_ground': True
+                                            'show_ground': True,
+                                            'show_overs_phase': True                                        
                                         }
                                     
                                     # Generate selected plots
@@ -609,7 +612,7 @@ if df is not None:
         # PID Filter (dropdown with unique p_bat values)
         pid_list = sorted(working_df['p_bat'].dropna().unique())
         pid_options = ["All"] + [str(int(p)) for p in pid_list]
-        selected_pid_str = st.selectbox("Player ID (PID)", pid_options, index=0)
+        selected_pid_str = st.selectbox("Batter PID", pid_options, index=0)
         
         if selected_pid_str != "All":
             selected_pid = int(selected_pid_str)
@@ -690,8 +693,21 @@ if df is not None:
             "Death (16-20)": 3
         }
         phase = phase_map.get(selected_phase_str, None)
+        
+        # Ground Filter (dropdown)
+        if 'ground' in working_df.columns:
+            ground_options = sorted(working_df['ground'].dropna().unique())
+            ground_display = ["All"] + list(ground_options)
+            selected_ground_str = st.selectbox("Ground", ground_display, index=0)
+            
+            if selected_ground_str != "All":
+                selected_ground = selected_ground_str
+            else:
+                selected_ground = None
+        else:
+            selected_ground = None
     
-    # ===== DATA VALIDATION =====
+    # ===== DATA VALIDATION ====
     st.markdown("---")
     
     # Check if we have data after all filters
@@ -735,6 +751,7 @@ if df is not None:
                 show_bowler = st.checkbox("Show Bowler", value=True)
                 show_control = st.checkbox("Show Control %", value=True)
                 show_prod_shot = st.checkbox("Show Productive Shot", value=True)
+                show_overs_phase = st.checkbox("Show Overs and Phase", value=True)
                 show_ground = st.checkbox("Show Ground Image", value=True)
 
             with col3:
@@ -787,6 +804,7 @@ if df is not None:
                     transparent=False,
                     over_values=over_values,
                     phase=phase,
+                    ground=selected_ground,
                     date_from=date_from,
                     date_to=date_to,
                     show_title=show_title,
@@ -797,7 +815,8 @@ if df is not None:
                     show_control=show_control,
                     show_prod_shot=show_prod_shot,
                     show_bowler=show_bowler,
-                    show_ground=show_ground
+                    show_ground=show_ground,
+                    show_overs_phase=show_overs_phase
                 )
                 with col2:
                     st.pyplot(fig_spike)
@@ -829,6 +848,7 @@ if df is not None:
                 show_bowler_trans = st.checkbox("Show Bowler", value=True, key="spike_trans_bowler")
                 show_control_trans = st.checkbox("Show Control %", value=True, key="spike_trans_control")
                 show_prod_shot_trans = st.checkbox("Show Productive Shot", value=True, key="spike_trans_prod")
+                show_overs_phase_trans = st.checkbox("Show Overs and Phase", value=True, key="spike_trans_overs_phase")
                 show_ground_trans = st.checkbox("Show Ground Image", value=True, key="spike_trans_ground")
 
             with col3:
@@ -876,6 +896,7 @@ if df is not None:
                     team_bowl=selected_team_bowl_value,
                     run_values=filtered_runs_spike_trans,
                     bowler_name=bowler_name,
+                    ground=selected_ground,
                     bowler_id=bowler_id,
                     competition=selected_competition_value,
                     transparent=True,
@@ -891,7 +912,8 @@ if df is not None:
                     show_control=show_control_trans,
                     show_prod_shot=show_prod_shot_trans,
                     show_bowler=show_bowler_trans,
-                    show_ground=show_ground_trans
+                    show_ground=show_ground_trans,
+                    show_overs_phase=show_overs_phase_trans
                 )
                 with col2:
                     st.pyplot(fig_spike_trans)
@@ -923,6 +945,7 @@ if df is not None:
                 show_bowler_desc = st.checkbox("Show Bowler", value=True, key="spike_desc_bowler")
                 show_control_desc = st.checkbox("Show Control %", value=True, key="spike_desc_control")
                 show_prod_shot_desc = st.checkbox("Show Productive Shot", value=True, key="spike_desc_prod")
+                show_overs_phase_desc = st.checkbox("Show Overs and Phase", value=True, key="spike_desc_overs_phase")
                 show_ground_desc = st.checkbox("Show Ground Image", value=True, key="spike_desc_ground")
 
             with col3:
@@ -974,6 +997,7 @@ if df is not None:
                     transparent=False,
                     over_values=over_values,
                     phase=phase,
+                    ground=selected_ground,
                     date_from=date_from,
                     date_to=date_to,
                     show_title=show_title_desc,
@@ -984,7 +1008,8 @@ if df is not None:
                     show_control=show_control_desc,
                     show_prod_shot=show_prod_shot_desc,
                     show_bowler=show_bowler_desc,
-                    show_ground=show_ground_desc
+                    show_ground=show_ground_desc,
+                    show_overs_phase=show_overs_phase_desc
                 )
                 with col2:
                     st.pyplot(fig_spike_desc)
@@ -1016,6 +1041,7 @@ if df is not None:
                 show_bowler_desc_trans = st.checkbox("Show Bowler", value=True, key="spike_desc_trans_bowler")
                 show_control_desc_trans = st.checkbox("Show Control %", value=True, key="spike_desc_trans_control")
                 show_prod_shot_desc_trans = st.checkbox("Show Productive Shot", value=True, key="spike_desc_trans_prod")
+                show_overs_phase_desc_trans = st.checkbox("Show Overs and Phase", value=True, key="spike_desc_trans_overs_phase")
                 show_ground_desc_trans = st.checkbox("Show Ground Image", value=True, key="spike_desc_trans_ground")
 
             with col3:
@@ -1067,6 +1093,7 @@ if df is not None:
                     transparent=True,
                     over_values=over_values,
                     phase=phase,
+                    ground=selected_ground,
                     date_from=date_from,
                     date_to=date_to,
                     show_title=show_title_desc_trans,
@@ -1077,7 +1104,8 @@ if df is not None:
                     show_control=show_control_desc_trans,
                     show_prod_shot=show_prod_shot_desc_trans,
                     show_bowler=show_bowler_desc_trans,
-                    show_ground=show_ground_desc_trans
+                    show_ground=show_ground_desc_trans,
+                    show_overs_phase=show_overs_phase_desc_trans
                 )
                 with col2:
                     st.pyplot(fig_spike_desc_trans)
@@ -1108,7 +1136,7 @@ if df is not None:
                 show_bowler_wagon = st.checkbox("Show Bowler (Wagon)", value=True, key="wagon_bowler")
                 show_control_wagon = st.checkbox("Show Control % (Wagon)", value=True, key="wagon_ctrl")
                 show_prod_shot_wagon = st.checkbox("Show Productive Shot (Wagon)", value=True, key="wagon_prod")
-            
+                show_overs_phase_wagon = st.checkbox("Show Overs and Phase (Wagon)", value=True, key="wagon_overs_phase")
             with col3:
                 st.markdown("## Run Filter (Wagon Plot)")
 
@@ -1158,6 +1186,7 @@ if df is not None:
                         run_values=filtered_runs_wagon,
                         competition=selected_competition_value,
                         transparent=False,
+                        ground=selected_ground,
                         over_values=over_values,
                         phase=phase,
                         date_from=date_from,
@@ -1169,6 +1198,7 @@ if df is not None:
                         show_control=show_control_wagon,
                         show_prod_shot=show_prod_shot_wagon,
                         show_bowler=show_bowler_wagon,
+                        show_overs_phase=show_overs_phase_wagon
                     )
                     st.pyplot(fig_wagon)
             
@@ -1197,6 +1227,7 @@ if df is not None:
                 show_fours_sixes_wagon_trans = st.checkbox("Show 4s and 6s (Wagon)", value=True, key="wagon_trans_fs")
                 show_bowler_wagon_trans = st.checkbox("Show Bowler (Wagon)", value=True, key="wagon_trans_bowler")
                 show_control_wagon_trans = st.checkbox("Show Control % (Wagon)", value=True, key="wagon_trans_ctrl")
+                show_overs_phase_wagon_trans = st.checkbox("Show Overs and Phase (Wagon)", value=True, key="wagon_trans_overs_phase")
                 show_prod_shot_wagon_trans = st.checkbox("Show Productive Shot (Wagon)", value=True, key="wagon_trans_prod")
             
             with col3:
@@ -1248,6 +1279,7 @@ if df is not None:
                         run_values=filtered_runs_wagon_trans,
                         competition=selected_competition_value,
                         transparent=True,
+                        ground=selected_ground,
                         over_values=over_values,
                         phase=phase,
                         date_from=date_from,
@@ -1259,6 +1291,7 @@ if df is not None:
                         show_control=show_control_wagon_trans,
                         show_prod_shot=show_prod_shot_wagon_trans,
                         show_bowler=show_bowler_wagon_trans,
+                        show_overs_phase=show_overs_phase_wagon_trans
                     )
                     st.pyplot(fig_wagon_trans)
             
@@ -1287,6 +1320,7 @@ if df is not None:
                 show_fours_sixes_wagon_desc = st.checkbox("Show 4s and 6s (Wagon Desc)", value=True, key="wagon_desc_fs")
                 show_bowler_wagon_desc = st.checkbox("Show Bowler (Wagon Desc)", value=True, key="wagon_desc_bowler")
                 show_control_wagon_desc = st.checkbox("Show Control % (Wagon Desc)", value=True, key="wagon_desc_control")
+                show_overs_phase_wagon_desc = st.checkbox("Show Overs and Phase (Wagon Desc)", value=True, key="wagon_desc_overs_phase")
                 show_prod_shot_wagon_desc = st.checkbox("Show Productive Shot (Wagon Desc)", value=True, key="wagon_desc_prod")
             
             with col3:
@@ -1336,6 +1370,7 @@ if df is not None:
                     bowler_id=bowler_id,
                     competition=selected_competition_value,
                     transparent=False,
+                    ground=selected_ground,
                     over_values=over_values,
                     phase=phase,
                     date_from=date_from,
@@ -1346,7 +1381,8 @@ if df is not None:
                     show_fours_sixes=show_fours_sixes_wagon_desc,
                     show_control=show_control_wagon_desc,
                     show_prod_shot=show_prod_shot_wagon_desc,
-                    show_bowler=show_bowler_wagon_desc
+                    show_bowler=show_bowler_wagon_desc,
+                    show_overs_phase=show_overs_phase_wagon_desc
                 )
                 with col2:
                     st.pyplot(fig_wagon_desc)
@@ -1376,6 +1412,7 @@ if df is not None:
                 show_fours_sixes_wagon_desc_trans = st.checkbox("Show 4s and 6s (Wagon Desc)", value=True, key="wagon_desc_trans_fs")
                 show_bowler_wagon_desc_trans = st.checkbox("Show Bowler (Wagon Desc)", value=True, key="wagon_desc_trans_bowler")
                 show_control_wagon_desc_trans = st.checkbox("Show Control % (Wagon Desc)", value=True, key="wagon_desc_trans_control")
+                show_overs_phase_wagon_desc_trans = st.checkbox("Show Overs and Phase (Wagon Desc)", value=True, key="wagon_desc_trans_overs_phase")
                 show_prod_shot_wagon_desc_trans = st.checkbox("Show Productive Shot (Wagon Desc)", value=True, key="wagon_desc_trans_prod")
             
             with col3:
@@ -1425,6 +1462,7 @@ if df is not None:
                     bowler_id=bowler_id,
                     competition=selected_competition_value,
                     transparent=True,
+                    ground=selected_ground,
                     over_values=over_values,
                     phase=phase,
                     date_from=date_from,
@@ -1435,7 +1473,8 @@ if df is not None:
                     show_fours_sixes=show_fours_sixes_wagon_desc_trans,
                     show_control=show_control_wagon_desc_trans,
                     show_prod_shot=show_prod_shot_wagon_desc_trans,
-                    show_bowler=show_bowler_wagon_desc_trans
+                    show_bowler=show_bowler_wagon_desc_trans,
+                    show_overs_phase=show_overs_phase_wagon_desc_trans
                 )
                 with col2:
                     st.pyplot(fig_wagon_desc_trans)
@@ -1506,6 +1545,7 @@ if df is not None:
 
 else:
     st.info("Please select a dataset source to begin.")
+
 
 
 
