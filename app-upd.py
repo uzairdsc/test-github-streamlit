@@ -95,7 +95,7 @@ def create_zip_of_plots(figures_dict):
 st.sidebar.header("📂 Select Dataset Source")
 data_source = st.sidebar.selectbox(
     "Choose data source:",
-    ["Upload Data File", "S3_since26" ,"S3_since24", "S3_since24WC", "S3_all", "Cache_all", "Cache_since24", "Cache_since24WC"]
+    ["Upload Data File", "S3_2026-WT20-bbb", "S3_since26" ,"S3_since24", "S3_since24WC", "S3_all", "Cache_all", "Cache_since24", "Cache_since24WC"]
 )
 
 # Initialize session state for df
@@ -110,6 +110,30 @@ if data_source == "Upload Data File":
         df = pd.read_csv(uploaded_file, low_memory=False)
         st.session_state.df = df
         st.sidebar.success(f"Loaded {len(df):,} rows")
+
+elif data_source == "S3_2026-WT20-bbb":
+    if "aws" in st.secrets:
+        bucket = st.secrets["aws"]["bucket_name"]
+        access_key = st.secrets["aws"]["access_key_id"]
+        secret_key = st.secrets["aws"]["secret_access_key"]
+        region = st.secrets["aws"].get("region_name", "ap-south-1")
+        
+        s3_file_key = st.sidebar.text_input(
+            "Enter S3 file path:",
+            value="2026-WT20-bbb-data.csv"
+        )
+        
+        if st.sidebar.button("Load from S3", key="load_2025"):
+            loaded_df = load_from_s3(bucket, s3_file_key, access_key, secret_key, region)
+            if loaded_df is not None:
+                st.session_state.df = loaded_df
+                df = loaded_df
+        
+        # Show current loaded data info
+        if st.session_state.df is not None:
+            st.sidebar.info(f"Current data: {len(st.session_state.df):,} rows")
+    else:
+        st.sidebar.warning("⚠️ AWS credentials not configured in secrets.toml")
 
 elif data_source == "S3_since24":
     if "aws" in st.secrets:
@@ -1545,6 +1569,7 @@ if df is not None:
 
 else:
     st.info("Please select a dataset source to begin.")
+
 
 
 
