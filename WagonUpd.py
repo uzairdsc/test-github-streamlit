@@ -9,7 +9,8 @@ import pandas as pd
 def wagon_zone_plot(
     df, player_name=None, pid=None, inns=None, mat_num=None, bowler_name=None, team_bat=None, 
     team_bowl=None, run_values=None, competition=None, transparent=False, ground=None,
-    date_from=None, date_to=None, over_values=None, phase=None, bowler_id=None,
+    date_from=None, date_to=None, over_values=None, phase=None, bowler_id=None, mcode=None,
+    bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
     show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, 
     show_prod_shot=True,runs_count=True, show_bowler=True, show_overs_phase=True
 ):
@@ -73,6 +74,10 @@ def wagon_zone_plot(
         elif phase == 3 or phase == "Death":
             local_df = local_df[local_df['over'].between(17, 20)]
 
+    #match code like PAK v NED
+    if mcode is not None:
+        local_df = local_df[local_df['mcode'] == mcode]
+
     # Date range filter
     if date_from is not None:
         local_df = local_df[local_df['date'] >= pd.to_datetime(date_from)]
@@ -84,6 +89,20 @@ def wagon_zone_plot(
     #ground filter
     if ground is not None:
         local_df = local_df[local_df['ground'] == ground]
+
+
+    if bat_hand is not None:
+        local_df = local_df[local_df['bat_hand'] == bat_hand]
+
+    if bowl_type is not None:
+        local_df = local_df[local_df['bowl_type'] == bowl_type]
+
+    if bowl_kind is not None:
+        local_df = local_df[local_df['bowl_kind'] == bowl_kind]
+        
+    if bowl_arm is not None:
+        local_df = local_df[local_df['bowl_arm'] == bowl_arm]
+
 
     if player_name is None:
         innings_valid_balls = local_df.copy()  # include all for team
@@ -419,7 +438,8 @@ def wagon_zone_plot(
 def wagon_zone_plot_descriptive(
     df, player_name=None, pid=None, inns=None, mat_num=None, bowler_name=None, team_bat=None, 
     team_bowl=None, run_values=None, competition=None, transparent=False, ground=None,
-    date_from=None, date_to=None, over_values=None, phase=None, bowler_id=None,
+    date_from=None, date_to=None, over_values=None, phase=None, bowler_id=None, mcode=None,
+    bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
     show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, 
     show_prod_shot=True,runs_count=True, show_bowler=True, show_overs_phase=True
 ):
@@ -482,6 +502,10 @@ def wagon_zone_plot_descriptive(
         elif phase == 3 or phase == "Death":
             local_df = local_df[local_df['over'].between(17, 20)]
 
+    #match code like PAK v NED
+    if mcode is not None:
+        local_df = local_df[local_df['mcode'] == mcode]
+        
     # Date range filter
     if date_from is not None:
         local_df = local_df[local_df['date'] >= pd.to_datetime(date_from)]
@@ -493,6 +517,20 @@ def wagon_zone_plot_descriptive(
     if ground is not None:
         local_df = local_df[local_df['ground'] == ground]
 
+
+    if bat_hand is not None:
+        local_df = local_df[local_df['bat_hand'] == bat_hand]
+
+    if bowl_type is not None:
+        local_df = local_df[local_df['bowl_type'] == bowl_type]
+
+    if bowl_kind is not None:
+        local_df = local_df[local_df['bowl_kind'] == bowl_kind]
+        
+    if bowl_arm is not None:
+        local_df = local_df[local_df['bowl_arm'] == bowl_arm]
+
+        
     if player_name is None:
         innings_valid_balls = local_df.copy()  # include all for team
         innings_runs = innings_valid_balls['score'].sum() #score
