@@ -305,7 +305,6 @@ if st.session_state.df is not None:
         st.rerun()
         
 
-
 # ===== BATCH PLOT GENERATION SECTION =====
 if st.session_state.df is not None:
     st.sidebar.markdown("---")
@@ -317,7 +316,7 @@ if st.session_state.df is not None:
     #     type=["xlsx", "csv"],
     #     key="squad_upload"
     # )
-    squad_file = "data//2026-WT20-Squads.xlsx"
+    squad_file = "/data/2026-WT20-Squads.xlsx"
 
     if squad_file:
         # Read squad file
@@ -608,6 +607,20 @@ if df is not None:
             working_df = working_df[working_df['p_match'] == selected_mat_num]
         else:
             selected_mat_num = None
+        
+        # Match Code Filter (from working_df)
+        if 'mcode' in working_df.columns:
+            mcode_options = sorted(working_df['mcode'].dropna().unique())
+            mcode_display = ["All"] + list(mcode_options)
+            selected_mcode_str = st.selectbox("Match Code", mcode_display, index=0)
+            
+            if selected_mcode_str != "All":
+                selected_mcode = selected_mcode_str
+            else:
+                selected_mcode = None
+        else:
+            selected_mcode = None
+        
     
     # ===== COLUMN 2: Batting Team, Batter, Player ID =====
     with filter_col2:
@@ -642,6 +655,19 @@ if df is not None:
             selected_pid = int(selected_pid_str)
         else:
             selected_pid = None
+        
+        # Batsman Hand Filter (from working_df)
+        if 'bat_hand' in working_df.columns:
+            bat_hand_options = sorted(working_df['bat_hand'].dropna().unique())
+            bat_hand_display = ["All"] + list(bat_hand_options)
+            selected_bat_hand_str = st.selectbox("Batsman Hand", bat_hand_display, index=0)
+            
+            if selected_bat_hand_str != "All":
+                bat_hand = selected_bat_hand_str
+            else:
+                bat_hand = None
+        else:
+            bat_hand = None
     
     # ===== COLUMN 3: Bowling Team, Bowler, Bowler PID =====
     with filter_col3:
@@ -679,6 +705,45 @@ if df is not None:
             bowler_id = int(selected_bowl_pid_str)
         else:
             bowler_id = None
+        
+        # Bowler Type Filter (from working_df)
+        if 'bowl_type' in working_df.columns:
+            bowl_type_options = sorted(working_df['bowl_type'].dropna().unique())
+            bowl_type_display = ["All"] + list(bowl_type_options)
+            selected_bowl_type_str = st.selectbox("Bowler Type", bowl_type_display, index=0)
+            
+            if selected_bowl_type_str != "All":
+                bowl_type = selected_bowl_type_str
+            else:
+                bowl_type = None
+        else:
+            bowl_type = None
+        
+        # Bowler Kind Filter (from working_df)
+        if 'bowl_kind' in working_df.columns:
+            bowl_kind_options = sorted(working_df['bowl_kind'].dropna().unique())
+            bowl_kind_display = ["All"] + list(bowl_kind_options)
+            selected_bowl_kind_str = st.selectbox("Bowler Kind", bowl_kind_display, index=0)
+            
+            if selected_bowl_kind_str != "All":
+                bowl_kind = selected_bowl_kind_str
+            else:
+                bowl_kind = None
+        else:
+            bowl_kind = None
+        
+        # Bowler Arm Filter (from working_df)
+        if 'bowl_arm' in working_df.columns:
+            bowl_arm_options = sorted(working_df['bowl_arm'].dropna().unique())
+            bowl_arm_display = ["All"] + list(bowl_arm_options)
+            selected_bowl_arm_str = st.selectbox("Bowler Arm", bowl_arm_display, index=0)
+            
+            if selected_bowl_arm_str != "All":
+                bowl_arm = selected_bowl_arm_str
+            else:
+                bowl_arm = None
+        else:
+            bowl_arm = None
     
     # ===== COLUMN 4: Innings, Overs, Phases =====
     with filter_col4:
@@ -829,8 +894,13 @@ if df is not None:
                     over_values=over_values,
                     phase=phase,
                     ground=selected_ground,
+                    mcode=selected_mcode,
                     date_from=date_from,
                     date_to=date_to,
+                    bat_hand=bat_hand,
+                    bowl_type=bowl_type,
+                    bowl_kind=bowl_kind,
+                    bowl_arm=bowl_arm,
                     show_title=show_title,
                     show_summary=show_summary,
                     show_legend=show_legend,
@@ -926,8 +996,13 @@ if df is not None:
                     transparent=True,
                     over_values=over_values,
                     phase=phase,
+                    mcode=selected_mcode,
                     date_from=date_from,
                     date_to=date_to,
+                    bat_hand=bat_hand,
+                    bowl_type=bowl_type,
+                    bowl_kind=bowl_kind,
+                    bowl_arm=bowl_arm,
                     show_title=show_title_trans,
                     show_summary=show_summary_trans,
                     show_legend=show_legend_trans,
@@ -1022,8 +1097,13 @@ if df is not None:
                     over_values=over_values,
                     phase=phase,
                     ground=selected_ground,
+                    mcode=selected_mcode,
                     date_from=date_from,
                     date_to=date_to,
+                    bat_hand=bat_hand,
+                    bowl_type=bowl_type,
+                    bowl_kind=bowl_kind,
+                    bowl_arm=bowl_arm,
                     show_title=show_title_desc,
                     show_summary=show_summary_desc,
                     show_legend=show_legend_desc,
@@ -1118,8 +1198,13 @@ if df is not None:
                     over_values=over_values,
                     phase=phase,
                     ground=selected_ground,
+                    mcode=selected_mcode,
                     date_from=date_from,
                     date_to=date_to,
+                    bat_hand=bat_hand,
+                    bowl_type=bowl_type,
+                    bowl_kind=bowl_kind,
+                    bowl_arm=bowl_arm,
                     show_title=show_title_desc_trans,
                     show_summary=show_summary_desc_trans,
                     show_legend=show_legend_desc_trans,
@@ -1211,10 +1296,15 @@ if df is not None:
                         competition=selected_competition_value,
                         transparent=False,
                         ground=selected_ground,
+                        mcode=selected_mcode,
                         over_values=over_values,
                         phase=phase,
                         date_from=date_from,
                         date_to=date_to,
+                        bat_hand=bat_hand,
+                        bowl_type=bowl_type,
+                        bowl_kind=bowl_kind,
+                        bowl_arm=bowl_arm,
                         show_title=show_title_wagon,
                         show_summary=show_summary_wagon,
                         runs_count=runs_count_wagon,
@@ -1304,10 +1394,15 @@ if df is not None:
                         competition=selected_competition_value,
                         transparent=True,
                         ground=selected_ground,
+                        mcode=selected_mcode,
                         over_values=over_values,
                         phase=phase,
                         date_from=date_from,
                         date_to=date_to,
+                        bat_hand=bat_hand,
+                        bowl_type=bowl_type,
+                        bowl_kind=bowl_kind,
+                        bowl_arm=bowl_arm,
                         show_title=show_title_wagon_trans,
                         show_summary=show_summary_wagon_trans,
                         runs_count=runs_count_wagon_trans,
@@ -1395,10 +1490,15 @@ if df is not None:
                     competition=selected_competition_value,
                     transparent=False,
                     ground=selected_ground,
+                    mcode=selected_mcode,
                     over_values=over_values,
                     phase=phase,
                     date_from=date_from,
                     date_to=date_to,
+                    bat_hand=bat_hand,
+                    bowl_type=bowl_type,
+                    bowl_kind=bowl_kind,
+                    bowl_arm=bowl_arm,
                     show_title=show_title_wagon_desc,
                     show_summary=show_summary_wagon_desc,
                     runs_count=runs_count_wagon_desc,
@@ -1487,10 +1587,15 @@ if df is not None:
                     competition=selected_competition_value,
                     transparent=True,
                     ground=selected_ground,
+                    mcode=selected_mcode,
                     over_values=over_values,
                     phase=phase,
                     date_from=date_from,
                     date_to=date_to,
+                    bat_hand=bat_hand,
+                    bowl_type=bowl_type,
+                    bowl_kind=bowl_kind,
+                    bowl_arm=bowl_arm,
                     show_title=show_title_wagon_desc_trans,
                     show_summary=show_summary_wagon_desc_trans,
                     runs_count=runs_count_wagon_desc_trans,
@@ -1569,9 +1674,3 @@ if df is not None:
 
 else:
     st.info("Please select a dataset source to begin.")
-
-
-
-
-
-
