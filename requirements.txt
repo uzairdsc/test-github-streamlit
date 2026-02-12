@@ -4,3 +4,4 @@ numpy
 matplotlib
 boto3
 openpyxl
+python-dotenv
