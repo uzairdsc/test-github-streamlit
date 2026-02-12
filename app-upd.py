@@ -723,7 +723,7 @@ if df is not None:
         if 'bowl_kind' in working_df.columns:
             bowl_kind_options = sorted(working_df['bowl_kind'].dropna().unique())
             bowl_kind_display = ["All"] + list(bowl_kind_options)
-            selected_bowl_kind_str = st.selectbox("Bowler Kind", bowl_kind_display, index=0)
+            selected_bowl_kind_str = st.selectbox("Bowler Pace", bowl_kind_display, index=0)
             
             if selected_bowl_kind_str != "All":
                 bowl_kind = selected_bowl_kind_str
@@ -1674,4 +1674,5 @@ if df is not None:
 
 else:
     st.info("Please select a dataset source to begin.")
+
 
