@@ -845,6 +845,19 @@ if df is not None:
                 show_title = st.checkbox("Show Plot Title", value=True)
                 show_legend = st.checkbox("Show Legend", value=True)
                 show_summary = st.checkbox("Show Runs Summary", value=True)
+                
+                show_shots_breakdown = st.checkbox("Show Shots Breakdown", value=True, key="spike_shots_breakdown")
+                if show_shots_breakdown:
+                    shots_breakdown_options = st.multiselect(
+                        "Shots to Display",
+                        options=['0s', '1s', '2s', '3s', '4s', '6s'],
+                        default=['0s', '1s', '4s', '6s'],
+                        key="spike_shots_options",
+                        help="Select which run types to display in breakdown"
+                    )
+                else:
+                    shots_breakdown_options = []
+                
                 runs_count = st.checkbox("Show Runs Count", value=True)
                 show_fours_sixes = st.checkbox("Show 4s and 6s", value=True)
                 show_bowler = st.checkbox("Show Bowler", value=True)
@@ -915,6 +928,8 @@ if df is not None:
                     bowl_arm=bowl_arm,
                     show_title=show_title,
                     show_summary=show_summary,
+                    show_shots_breakdown=show_shots_breakdown,
+                    shots_breakdown_options=shots_breakdown_options,
                     show_legend=show_legend,
                     runs_count=runs_count,
                     show_fours_sixes=show_fours_sixes,
@@ -950,6 +965,19 @@ if df is not None:
                 show_title_trans = st.checkbox("Show Plot Title", value=True, key="spike_trans_title")
                 show_legend_trans = st.checkbox("Show Legend", value=True, key="spike_trans_legend")
                 show_summary_trans = st.checkbox("Show Runs Summary", value=True, key="spike_trans_summary")
+                
+                show_shots_breakdown_trans = st.checkbox("Show Shots Breakdown", value=True, key="spike_trans_shots_breakdown")
+                if show_shots_breakdown_trans:
+                    shots_breakdown_options_trans = st.multiselect(
+                        "Shots to Display",
+                        options=['0s', '1s', '2s', '3s', '4s', '6s'],
+                        default=['0s', '1s', '4s', '6s'],
+                        key="spike_trans_shots_options",
+                        help="Select which run types to display in breakdown"
+                    )
+                else:
+                    shots_breakdown_options_trans = []
+                
                 runs_count_trans = st.checkbox("Show Runs Count", value=True, key="spike_trans_runs")
                 show_fours_sixes_trans = st.checkbox("Show 4s and 6s", value=True, key="spike_trans_fs")
                 show_bowler_trans = st.checkbox("Show Bowler", value=True, key="spike_trans_bowler")
@@ -1020,6 +1048,8 @@ if df is not None:
                     bowl_arm=bowl_arm,
                     show_title=show_title_trans,
                     show_summary=show_summary_trans,
+                    show_shots_breakdown=show_shots_breakdown_trans,
+                    shots_breakdown_options=shots_breakdown_options_trans,
                     show_legend=show_legend_trans,
                     runs_count=runs_count_trans,
                     show_fours_sixes=show_fours_sixes_trans,
@@ -1055,6 +1085,19 @@ if df is not None:
                 show_title_desc = st.checkbox("Show Plot Title", value=True, key="spike_desc_title")
                 show_legend_desc = st.checkbox("Show Legend", value=True, key="spike_desc_legend")
                 show_summary_desc = st.checkbox("Show Runs Summary", value=True, key="spike_desc_summary")
+                
+                show_shots_breakdown_desc = st.checkbox("Show Shots Breakdown", value=True, key="spike_desc_shots_breakdown")
+                if show_shots_breakdown_desc:
+                    shots_breakdown_options_desc = st.multiselect(
+                        "Shots to Display",
+                        options=['0s', '1s', '2s', '3s', '4s', '6s'],
+                        default=['0s', '1s', '4s', '6s'],
+                        key="spike_desc_shots_options",
+                        help="Select which run types to display in breakdown"
+                    )
+                else:
+                    shots_breakdown_options_desc = []
+                
                 runs_count_desc = st.checkbox("Show Runs Count", value=True, key="spike_desc_runs")
                 show_fours_sixes_desc = st.checkbox("Show 4s and 6s", value=True, key="spike_desc_fs")
                 show_bowler_desc = st.checkbox("Show Bowler", value=True, key="spike_desc_bowler")
@@ -1124,6 +1167,8 @@ if df is not None:
                     bowl_arm=bowl_arm,
                     show_title=show_title_desc,
                     show_summary=show_summary_desc,
+                    show_shots_breakdown=show_shots_breakdown_desc,
+                    shots_breakdown_options=shots_breakdown_options_desc,
                     show_legend=show_legend_desc,
                     runs_count=runs_count_desc,
                     show_fours_sixes=show_fours_sixes_desc,
@@ -1159,6 +1204,19 @@ if df is not None:
                 show_title_desc_trans = st.checkbox("Show Plot Title", value=True, key="spike_desc_trans_title")
                 show_legend_desc_trans = st.checkbox("Show Legend", value=True, key="spike_desc_trans_legend")
                 show_summary_desc_trans = st.checkbox("Show Runs Summary", value=True, key="spike_desc_trans_summary")
+                
+                show_shots_breakdown_desc_trans = st.checkbox("Show Shots Breakdown", value=True, key="spike_desc_trans_shots_breakdown")
+                if show_shots_breakdown_desc_trans:
+                    shots_breakdown_options_desc_trans = st.multiselect(
+                        "Shots to Display",
+                        options=['0s', '1s', '2s', '3s', '4s', '6s'],
+                        default=['0s', '1s', '4s', '6s'],
+                        key="spike_desc_trans_shots_options",
+                        help="Select which run types to display in breakdown"
+                    )
+                else:
+                    shots_breakdown_options_desc_trans = []
+                
                 runs_count_desc_trans = st.checkbox("Show Runs Count", value=True, key="spike_desc_trans_runs")
                 show_fours_sixes_desc_trans = st.checkbox("Show 4s and 6s", value=True, key="spike_desc_trans_fs")
                 show_bowler_desc_trans = st.checkbox("Show Bowler", value=True, key="spike_desc_trans_bowler")
@@ -1228,6 +1286,8 @@ if df is not None:
                     bowl_arm=bowl_arm,
                     show_title=show_title_desc_trans,
                     show_summary=show_summary_desc_trans,
+                    show_shots_breakdown=show_shots_breakdown_desc_trans,
+                    shots_breakdown_options=shots_breakdown_options_desc_trans,
                     show_legend=show_legend_desc_trans,
                     runs_count=runs_count_desc_trans,
                     show_fours_sixes=show_fours_sixes_desc_trans,
@@ -1262,6 +1322,19 @@ if df is not None:
                 st.markdown("## Customize Plot Info")    
                 show_title_wagon = st.checkbox("Show Plot Title (Wagon)", value=True, key="wagon_title")
                 show_summary_wagon = st.checkbox("Show Runs Summary (Wagon)", value=True, key="wagon_summary")
+                
+                show_shots_breakdown_wagon = st.checkbox("Show Shots Breakdown", value=True, key="wagon_shots_breakdown")
+                if show_shots_breakdown_wagon:
+                    shots_breakdown_options_wagon = st.multiselect(
+                        "Shots to Display",
+                        options=['0s', '1s', '2s', '3s', '4s', '6s'],
+                        default=['0s', '1s', '4s', '6s'],
+                        key="wagon_shots_options",
+                        help="Select which run types to display in breakdown"
+                    )
+                else:
+                    shots_breakdown_options_wagon = []
+                
                 runs_count_wagon = st.checkbox("Show Total Runs (Wagon)", value=True, key="wagon_total")
                 show_fours_sixes_wagon = st.checkbox("Show 4s and 6s (Wagon)", value=True, key="wagon_fs")
                 show_bowler_wagon = st.checkbox("Show Bowler (Wagon)", value=True, key="wagon_bowler")
@@ -1331,6 +1404,8 @@ if df is not None:
                         bowl_arm=bowl_arm,
                         show_title=show_title_wagon,
                         show_summary=show_summary_wagon,
+                        show_shots_breakdown=show_shots_breakdown_wagon,
+                        shots_breakdown_options=shots_breakdown_options_wagon,
                         runs_count=runs_count_wagon,
                         show_fours_sixes=show_fours_sixes_wagon,
                         show_control=show_control_wagon,
@@ -1362,6 +1437,19 @@ if df is not None:
                 st.markdown("## Customize Plot Info")    
                 show_title_wagon_trans = st.checkbox("Show Plot Title (Wagon)", value=True, key="wagon_trans_title")
                 show_summary_wagon_trans = st.checkbox("Show Runs Summary (Wagon)", value=True, key="wagon_trans_summary")
+                
+                show_shots_breakdown_wagon_trans = st.checkbox("Show Shots Breakdown", value=True, key="wagon_trans_shots_breakdown")
+                if show_shots_breakdown_wagon_trans:
+                    shots_breakdown_options_wagon_trans = st.multiselect(
+                        "Shots to Display",
+                        options=['0s', '1s', '2s', '3s', '4s', '6s'],
+                        default=['0s', '1s', '4s', '6s'],
+                        key="wagon_trans_shots_options",
+                        help="Select which run types to display in breakdown"
+                    )
+                else:
+                    shots_breakdown_options_wagon_trans = []
+                
                 runs_count_wagon_trans = st.checkbox("Show Total Runs (Wagon)", value=True, key="wagon_trans_total")
                 show_fours_sixes_wagon_trans = st.checkbox("Show 4s and 6s (Wagon)", value=True, key="wagon_trans_fs")
                 show_bowler_wagon_trans = st.checkbox("Show Bowler (Wagon)", value=True, key="wagon_trans_bowler")
@@ -1432,6 +1520,8 @@ if df is not None:
                         bowl_arm=bowl_arm,
                         show_title=show_title_wagon_trans,
                         show_summary=show_summary_wagon_trans,
+                        show_shots_breakdown=show_shots_breakdown_wagon_trans,
+                        shots_breakdown_options=shots_breakdown_options_wagon_trans,
                         runs_count=runs_count_wagon_trans,
                         show_fours_sixes=show_fours_sixes_wagon_trans,
                         show_control=show_control_wagon_trans,
@@ -1463,6 +1553,19 @@ if df is not None:
                 st.markdown("## Customize Plot Info")
                 show_title_wagon_desc = st.checkbox("Show Plot Title (Wagon Desc)", value=True, key="wagon_desc_title")
                 show_summary_wagon_desc = st.checkbox("Show Runs Summary (Wagon Desc)", value=True, key="wagon_desc_summary")
+                
+                show_shots_breakdown_wagon_desc = st.checkbox("Show Shots Breakdown", value=True, key="wagon_desc_shots_breakdown")
+                if show_shots_breakdown_wagon_desc:
+                    shots_breakdown_options_wagon_desc = st.multiselect(
+                        "Shots to Display",
+                        options=['0s', '1s', '2s', '3s', '4s', '6s'],
+                        default=['0s', '1s', '4s', '6s'],
+                        key="wagon_desc_shots_options",
+                        help="Select which run types to display in breakdown"
+                    )
+                else:
+                    shots_breakdown_options_wagon_desc = []
+                
                 runs_count_wagon_desc = st.checkbox("Show Runs Count (Wagon Desc)", value=True, key="wagon_desc_runs")
                 show_fours_sixes_wagon_desc = st.checkbox("Show 4s and 6s (Wagon Desc)", value=True, key="wagon_desc_fs")
                 show_bowler_wagon_desc = st.checkbox("Show Bowler (Wagon Desc)", value=True, key="wagon_desc_bowler")
@@ -1531,6 +1634,8 @@ if df is not None:
                     bowl_arm=bowl_arm,
                     show_title=show_title_wagon_desc,
                     show_summary=show_summary_wagon_desc,
+                    show_shots_breakdown=show_shots_breakdown_wagon_desc,
+                    shots_breakdown_options=shots_breakdown_options_wagon_desc,
                     runs_count=runs_count_wagon_desc,
                     show_fours_sixes=show_fours_sixes_wagon_desc,
                     show_control=show_control_wagon_desc,
@@ -1564,6 +1669,19 @@ if df is not None:
                 st.markdown("## Customize Plot Info")
                 show_title_wagon_desc_trans = st.checkbox("Show Plot Title (Wagon Desc)", value=True, key="wagon_desc_trans_title")
                 show_summary_wagon_desc_trans = st.checkbox("Show Runs Summary (Wagon Desc)", value=True, key="wagon_desc_trans_summary")
+                
+                show_shots_breakdown_wagon_desc_trans = st.checkbox("Show Shots Breakdown", value=True, key="wagon_desc_trans_shots_breakdown")
+                if show_shots_breakdown_wagon_desc_trans:
+                    shots_breakdown_options_wagon_desc_trans = st.multiselect(
+                        "Shots to Display",
+                        options=['0s', '1s', '2s', '3s', '4s', '6s'],
+                        default=['0s', '1s', '4s', '6s'],
+                        key="wagon_desc_trans_shots_options",
+                        help="Select which run types to display in breakdown"
+                    )
+                else:
+                    shots_breakdown_options_wagon_desc_trans = []
+                
                 runs_count_wagon_desc_trans = st.checkbox("Show Runs Count (Wagon Desc)", value=True, key="wagon_desc_trans_runs")
                 show_fours_sixes_wagon_desc_trans = st.checkbox("Show 4s and 6s (Wagon Desc)", value=True, key="wagon_desc_trans_fs")
                 show_bowler_wagon_desc_trans = st.checkbox("Show Bowler (Wagon Desc)", value=True, key="wagon_desc_trans_bowler")
@@ -1632,6 +1750,8 @@ if df is not None:
                     bowl_arm=bowl_arm,
                     show_title=show_title_wagon_desc_trans,
                     show_summary=show_summary_wagon_desc_trans,
+                    show_shots_breakdown=show_shots_breakdown_wagon_desc_trans,
+                    shots_breakdown_options=shots_breakdown_options_wagon_desc_trans,
                     runs_count=runs_count_wagon_desc_trans,
                     show_fours_sixes=show_fours_sixes_wagon_desc_trans,
                     show_control=show_control_wagon_desc_trans,
