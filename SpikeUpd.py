@@ -12,9 +12,9 @@ def spike_graph_plot(
     df, player_name=None, pid=None, inns=None, mat_num = None, team_bat=None, team_bowl=None,
     run_values=None, bowler_name=None, competition=None, date_from=None, date_to=None,    
     transparent=True, over_values=None, phase=None, bowler_id=None, ground=None, mcode=None,
-    title_components=['title', 'filters'],
+    title_components=['title', 'filters'], shots_breakdown_options=['0s', '1s', '2s', '3s', '4s', '6s'],  # NEW: Which runs to show
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
-    show_title=True, show_legend=True, show_summary=True,
+    show_title=True, show_legend=True, show_summary=True, show_shots_breakdown=True,
     show_fours_sixes=True, show_control=True, show_prod_shot=True, 
     runs_count=True, show_bowler=True, show_ground=True, show_overs=True, show_phase=True
 ):
@@ -141,6 +141,11 @@ def spike_graph_plot(
     
     innings_4s = (innings_valid_balls['outcome'] == 'four').sum()
     innings_6s = (innings_valid_balls['outcome'] == 'six').sum()
+
+    innings_0s = (innings_valid_balls['batruns'] == 0).sum()
+    innings_1s = (innings_valid_balls['batruns'] == 1).sum()
+    innings_2s = (innings_valid_balls['batruns'] == 2).sum()
+    innings_3s = (innings_valid_balls['batruns'] == 3).sum()
 
     if bowler_id is not None:
         local_df = local_df[local_df['p_bowl'] == bowler_id]
@@ -560,9 +565,28 @@ def spike_graph_plot(
     if show_summary:
         ax.text(200, -20, f"Total Runs: {innings_runs} ({innings_balls} balls) | Strike Rate: {round(innings_runs/innings_balls*100,2) if innings_balls > 0 else 0}",
                 fontsize=11, ha='center', fontweight='bold', color='darkgreen')
-        ax.text(200, -5, f"Total 4s: {innings_4s} | 6s: {innings_6s}",
-                fontsize=11, ha='center', color='darkgreen')
+        # ax.text(200, -5, f"4s x {innings_4s} | 6s x {innings_6s}",
+        #         fontsize=11, ha='center', color='darkgreen')
     
+    if show_shots_breakdown:
+    # Build breakdown text dynamically
+        breakdown_parts = []
+        if '0s' in shots_breakdown_options:
+            breakdown_parts.append(f"0s x {innings_0s}")
+        if '1s' in shots_breakdown_options:
+            breakdown_parts.append(f"1s x {innings_1s}")
+        if '2s' in shots_breakdown_options:
+            breakdown_parts.append(f"2s x {innings_2s}")
+        if '3s' in shots_breakdown_options:
+            breakdown_parts.append(f"3s x {innings_3s}")
+        if '4s' in shots_breakdown_options:
+            breakdown_parts.append(f"4s x {innings_4s}")
+        if '6s' in shots_breakdown_options:
+            breakdown_parts.append(f"6s x {innings_6s}")
+        
+        if breakdown_parts:  # Only show if something selected
+            breakdown_text = " | ".join(breakdown_parts)
+            ax.text(200, -5, breakdown_text, fontsize=11, ha='center', color='darkgreen')
     
     # if runs_count:
     #     if player_name is None:
@@ -680,9 +704,9 @@ def spike_graph_plot_descriptive(
     df, player_name=None, pid=None, inns=None, mat_num = None, team_bat=None, team_bowl=None,
     run_values=None, bowler_name=None, competition=None, date_from=None, date_to=None,
     transparent=False, over_values=None, phase=None, bowler_id=None, ground=None, mcode=None,
-    title_components=["title", "filters"],
+    title_components=["title", "filters"], shots_breakdown_options=['0s', '1s', '2s', '3s', '4s', '6s'],
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
-    show_title=True, show_legend=True, show_summary=True,
+    show_title=True, show_legend=True, show_summary=True, show_shots_breakdown=True,
     show_fours_sixes=True, show_control=True, show_prod_shot=True, 
     runs_count=True, show_bowler=True, show_ground=True, show_overs=True, show_phase=True
 ):
@@ -809,6 +833,11 @@ def spike_graph_plot_descriptive(
     
     innings_4s = (innings_valid_balls['outcome'] == 'four').sum()
     innings_6s = (innings_valid_balls['outcome'] == 'six').sum()
+
+    innings_0s = (innings_valid_balls['batruns'] == 0).sum()
+    innings_1s = (innings_valid_balls['batruns'] == 1).sum()
+    innings_2s = (innings_valid_balls['batruns'] == 2).sum()
+    innings_3s = (innings_valid_balls['batruns'] == 3).sum()
 
 
     if bowler_id is not None:
@@ -1220,8 +1249,29 @@ def spike_graph_plot_descriptive(
     if show_summary:
         ax.text(180, 440, f"Total Runs: {innings_runs} ({innings_balls} balls) | Strike Rate: {round(innings_runs/innings_balls*100, 2) if innings_balls > 0 else 0}",
                 fontsize=11, ha='center', fontweight='bold', color='darkgreen')
-        ax.text(180, 458, f"Total 4s: {innings_4s} | 6s: {innings_6s}",
-                fontsize=11, ha='center', color='darkgreen')
+        # ax.text(180, 458, f"4s x {innings_4s} | 6s x {innings_6s}",
+        # ax.text(180, 458, f"0s x {innings_0s} | 1s x {innings_1s} | 4s x {innings_4s} | 6s x {innings_6s}",
+        #         fontsize=11, ha='center', color='darkgreen')
+
+    if show_shots_breakdown:
+    # Build breakdown text dynamically
+        breakdown_parts = []
+        if '0s' in shots_breakdown_options:
+            breakdown_parts.append(f"0s x {innings_0s}")
+        if '1s' in shots_breakdown_options:
+            breakdown_parts.append(f"1s x {innings_1s}")
+        if '2s' in shots_breakdown_options:
+            breakdown_parts.append(f"2s x {innings_2s}")
+        if '3s' in shots_breakdown_options:
+            breakdown_parts.append(f"3s x {innings_3s}")
+        if '4s' in shots_breakdown_options:
+            breakdown_parts.append(f"4s x {innings_4s}")
+        if '6s' in shots_breakdown_options:
+            breakdown_parts.append(f"6s x {innings_6s}")
+        
+        if breakdown_parts:  # Only show if something selected
+            breakdown_text = " | ".join(breakdown_parts)
+            ax.text(180, 458, breakdown_text, fontsize=11, ha='center', color='darkgreen')
     
     
     # if runs_count:
