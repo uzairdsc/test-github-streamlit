@@ -12,10 +12,11 @@ def spike_graph_plot(
     df, player_name=None, pid=None, inns=None, mat_num = None, team_bat=None, team_bowl=None,
     run_values=None, bowler_name=None, competition=None, date_from=None, date_to=None,    
     transparent=True, over_values=None, phase=None, bowler_id=None, ground=None, mcode=None,
+    title_components=['title', 'filters'],
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
     show_title=True, show_legend=True, show_summary=True,
     show_fours_sixes=True, show_control=True, show_prod_shot=True, 
-    runs_count=True, show_bowler=True, show_ground=True, show_overs_phase=True
+    runs_count=True, show_bowler=True, show_ground=True, show_overs=True, show_phase=True
 ):
     # score_colors = {
     #     # 0:  '#F70000',   
@@ -485,7 +486,7 @@ def spike_graph_plot(
     #         fontsize=11, ha='center', color='navy')
 
     ax.set_xlim(-20, 470)
-    ax.set_ylim(-30, 390)
+    ax.set_ylim(-50, 390)
     # ax.set_xlim(-20, 380)
     # ax.set_ylim(-30, 460)
     ax.set_xticks([]), ax.set_yticks([])
@@ -527,13 +528,37 @@ def spike_graph_plot(
                 title_name = "All Players"
                 title_opponent = "All Teams"
         
-        ax.set_title(f"{title_name} vs {title_opponent} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper(), 
-                    fontsize=12, fontweight='bold', fontfamily='DejaVu Sans')
+        # ax.set_title(f"{title_name} vs {title_opponent} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper(), 
+        #             fontsize=12, fontweight='bold', fontfamily='DejaVu Sans')
 
+        title_parts=[]
+
+        if "title" in title_components:
+            title_parts.append(f"{title_name} vs {title_opponent}")
+
+        if "filters" in title_components:
+            title_parts.append(f"{competition} - Mat \'{mat_num}\', Inns: \'{inns}\'")
+
+        title_text = " | ".join(title_parts).upper()
+
+    if show_title:
+        # Adjust position based on title length
+        if len(title_components) == 1:
+            # Shorter title - keep centered
+            title_x = 180
+            # title_y = 408  # Slightly lower for single line
+            ax.set_xlim(-20, 380)
+        else:
+            # Full title - original position
+            title_x = 180
+            # title_y = 400
+        
+        ax.text(title_x, -30, title_text, fontsize=12, ha='center', 
+                fontweight='bold', fontfamily='DejaVu Sans')
 
 
     if show_summary:
-        ax.text(200, -20, f"Total Runs: {innings_runs} ({innings_balls} balls)",
+        ax.text(200, -20, f"Total Runs: {innings_runs} ({innings_balls} balls) | Strike Rate: {round(innings_runs/innings_balls*100,2) if innings_balls > 0 else 0}",
                 fontsize=11, ha='center', fontweight='bold', color='darkgreen')
         ax.text(200, -5, f"Total 4s: {innings_4s} | 6s: {innings_6s}",
                 fontsize=11, ha='center', color='darkgreen')
@@ -618,7 +643,7 @@ def spike_graph_plot(
         )
 
 
-    if show_overs_phase:
+    if show_overs:
         # 1. Format Overs text
         if over_values is None:
             over_text = "All"
@@ -627,6 +652,11 @@ def spike_graph_plot(
         else:
             over_text = f"{min(over_values)}-{max(over_values)} ({len(over_values)} overs)"
 
+        # 3. Display on plot (below productive shot at 430, 250)
+        ax.text(430, 340, f"Overs: {over_text}", 
+                fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
+        
+    if show_phase:
         # 2. Format Phase text
         phase_names = {
             1: "Powerplay (1-6)",
@@ -635,9 +665,6 @@ def spike_graph_plot(
         }
         phase_text = phase_names.get(phase, "All")
 
-        # 3. Display on plot (below productive shot at 430, 250)
-        ax.text(430, 340, f"Overs: {over_text}", 
-                fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
         ax.text(430, 360, f"Phase: {phase_text}", 
                 fontsize=10, ha='center', color='crimson', fontweight='bold')
     
@@ -653,10 +680,11 @@ def spike_graph_plot_descriptive(
     df, player_name=None, pid=None, inns=None, mat_num = None, team_bat=None, team_bowl=None,
     run_values=None, bowler_name=None, competition=None, date_from=None, date_to=None,
     transparent=False, over_values=None, phase=None, bowler_id=None, ground=None, mcode=None,
+    title_components=["title", "filters"],
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
     show_title=True, show_legend=True, show_summary=True,
     show_fours_sixes=True, show_control=True, show_prod_shot=True, 
-    runs_count=True, show_bowler=True, show_ground=True, show_overs_phase=True
+    runs_count=True, show_bowler=True, show_ground=True, show_overs=True, show_phase=True
 ):
     # score_colors = {
     #     # 0:  '#F70000',   
@@ -1170,7 +1198,17 @@ def spike_graph_plot_descriptive(
         
         # ax.set_title(f"{title_name} vs {title_opponent} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper(), 
         #             fontsize=12, fontweight='bold', fontfamily='DejaVu Sans')
-        title_text = f"{title_name} vs {title_opponent} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper()
+        # title_text = f"{title_name} vs {title_opponent} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper()
+
+        title_parts = []
+
+        if 'title' in title_components:
+            title_parts.append(f"{title_name} vs {title_opponent}")
+        
+        if 'filters' in title_components:
+            title_parts.append(f"{competition} - Mat '{mat_num}', Inns: '{inns}'")
+        
+        title_text = " | ".join(title_parts).upper()
 
 
     # if show_summary:
@@ -1180,7 +1218,7 @@ def spike_graph_plot_descriptive(
     #             fontsize=11, ha='center', color='darkgreen')
 
     if show_summary:
-        ax.text(180, 440, f"Total Runs: {innings_runs} ({innings_balls} balls)",
+        ax.text(180, 440, f"Total Runs: {innings_runs} ({innings_balls} balls) | Strike Rate: {round(innings_runs/innings_balls*100, 2) if innings_balls > 0 else 0}",
                 fontsize=11, ha='center', fontweight='bold', color='darkgreen')
         ax.text(180, 458, f"Total 4s: {innings_4s} | 6s: {innings_6s}",
                 fontsize=11, ha='center', color='darkgreen')
@@ -1219,23 +1257,57 @@ def spike_graph_plot_descriptive(
 
     # update position for the plot
     if runs_count:
-        ax.text(40, 499, f"{total_score} ({balls_faced} balls)",
+        if not show_fours_sixes and not show_bowler:
+             ax.text(180, 499, f"{total_score} ({balls_faced} balls)",
                 fontsize=11, ha='center', fontweight='bold')
+        else:
+            ax.text(40, 499, f"{total_score} ({balls_faced} balls)",
+                    fontsize=11, ha='center', fontweight='bold')
+
+        # ax.text(40, 499, f"{total_score} ({balls_faced} balls)",
+        #         fontsize=11, ha='center', fontweight='bold')
         
     if show_fours_sixes:
-        ax.text(180, 499, f" - 4s: {total_4s} | 6s: {total_6s}",
+        if not runs_count and not show_bowler:
+            ax.text(180, 499, f" 4s: {total_4s} | 6s: {total_6s}",
                 fontsize=11, ha='center', color='darkgreen')
+        else:
+            ax.text(180, 499, f" | 4s: {total_4s} | 6s: {total_6s}",
+                fontsize=11, ha='center', color='darkgreen')
+
+        # ax.text(180, 499, f" | 4s: {total_4s} | 6s: {total_6s}",
+        #         fontsize=11, ha='center', color='darkgreen')
         
     if show_bowler:
         if bowler_name is None:
             bowler_name = 'All Bowlers'
         if bowler_name:
-            ax.text(310, 499, f" - vs {bowler_name}",
-                    fontsize=11, ha='center', color='blue', fontweight='bold')
+            if not runs_count and not show_fours_sixes:
+                ax.text(180, 499, f"vs {bowler_name}",
+                        fontsize=11, ha='center', color='blue', fontweight='bold')
+            else:
+                ax.text(310, 499, f" | vs {bowler_name}",
+                        fontsize=11, ha='center', color='blue', fontweight='bold')
+            # ax.text(310, 499, f" | vs {bowler_name}",
+            #         fontsize=11, ha='center', color='blue', fontweight='bold')
 
     if show_title:
-        ax.text(180,420,title_text, fontsize=12, fontweight='bold',  ha='center',
-                     fontfamily='DejaVu Sans')
+        # ax.text(180,420,title_text, fontsize=12, fontweight='bold',  ha='center',
+        #              fontfamily='DejaVu Sans')
+        
+        # Adjust position based on title length
+        if len(title_components) == 1:
+            # Shorter title - keep centered
+            title_x = 180
+            title_y = 420  # Slightly lower for single line
+            ax.set_xlim(-60, 420)
+        else:
+            # Full title - original position
+            title_x = 180
+            title_y = 420
+        
+        ax.text(title_x, title_y, title_text, fontsize=12, ha='center', 
+                fontweight='bold', fontfamily='DejaVu Sans')
 
     if show_control:
         ax.text(180, 482, f"Control: {control_pct}%",
@@ -1269,7 +1341,7 @@ def spike_graph_plot_descriptive(
         )
 
 
-    if show_overs_phase:
+    if show_overs:
         # 1. Format Overs text
         if over_values is None:
             over_text = "All"
@@ -1278,6 +1350,18 @@ def spike_graph_plot_descriptive(
         else:
             over_text = f"{min(over_values)}-{max(over_values)} ({len(over_values)} overs)"
 
+        if not show_phase:
+            ax.text(180, 570, f"Overs: {over_text}", 
+                fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
+        else:
+            ax.text(100, 570, f"Overs: {over_text}", 
+                fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
+        
+        # 3. Display on plot (below productive shot at 430, 250)
+        # ax.text(100, 570, f"Overs: {over_text}", 
+        #         fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
+
+    if show_phase:
         # 2. Format Phase text
         phase_names = {
             1: "Powerplay (1-6)",
@@ -1286,11 +1370,14 @@ def spike_graph_plot_descriptive(
         }
         phase_text = phase_names.get(phase, "All")
 
-        # 3. Display on plot (below productive shot at 430, 250)
-        ax.text(100, 570, f"Overs: {over_text}", 
-                fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
-        ax.text(260, 570, f"Phase: {phase_text}", 
+        if not show_overs:
+            ax.text(180, 570, f"Phase: {phase_text}", 
                 fontsize=10, ha='center', color='crimson', fontweight='bold')
+        else:
+            ax.text(260, 570, f"Phase: {phase_text}", 
+                fontsize=10, ha='center', color='crimson', fontweight='bold')
+        # ax.text(260, 570, f"Phase: {phase_text}", 
+        #         fontsize=10, ha='center', color='crimson', fontweight='bold')
     
     # plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07)
     plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.02)
