@@ -30,6 +30,7 @@ if not st.session_state.authenticated:
 # Import your plotting methods
 from SpikeUpd import spike_graph_plot as spike_plot_custom, spike_graph_plot_descriptive
 from WagonUpd import wagon_zone_plot, wagon_zone_plot_descriptive
+from DismissalPlot import dismissal_plot
 
 st.set_page_config(page_title="Cricket Wagon Wheel App" ,page_icon="🏏" ,layout="wide")
 st.title("🏏 Cricket Wagon Wheel Analysis Dashboard")
@@ -345,8 +346,8 @@ if st.session_state.df is not None:
                     # Plot type selection
                     batch_plot_types = st.sidebar.multiselect(
                         "Select plots to generate:",
-                        ["Spike Graph Plot", "Spike Graph Descriptive", "Wagon Zone Plot", "Wagon Zone Descriptive"],
-                        default=["Spike Graph Descriptive", "Wagon Zone Descriptive"],
+                        ["Spike Plot Plot", "Spike Plot Descriptive", "Wagon Zone Plot", "Wagon Zone Descriptive"],
+                        default=["Spike Plot Descriptive", "Wagon Zone Descriptive"],
                         key="batch_plot_select"
                     )
                     
@@ -479,14 +480,14 @@ if st.session_state.df is not None:
                                     
                                     # Generate selected plots
                                     try:
-                                        if "Spike Graph Plot" in batch_plot_types:
+                                        if "Spike Plot Plot" in batch_plot_types:
                                             spike_filters = {k: v for k, v in batch_filters.items()}
                                             fig = spike_plot_custom(df=df, pid=pid, player_name=None, **spike_filters)
                                             if fig is not None:
                                                 all_batch_figures[f"{player_name}_spike_graph_plot.png"] = fig
                                                 success_count += 1
                                         
-                                        if "Spike Graph Descriptive" in batch_plot_types:
+                                        if "Spike Plot Descriptive" in batch_plot_types:
                                             spike_filters = {k: v for k, v in batch_filters.items()}
                                             fig = spike_graph_plot_descriptive(df=df, pid=pid, player_name=None, **spike_filters)
                                             if fig is not None:
@@ -824,16 +825,18 @@ if df is not None:
         [
             "Spike Plot (White Background)",
             "Spike Plot (Transparent Background)",
-            "Spike Graph Descriptive",
-            "Spike Graph Descriptive (Transparent)",
+            "Spike Plot Descriptive",
+            "Spike Plot Descriptive (Transparent)",
             "Wagon Zone Plot (White Background)",
             "Wagon Zone Plot (Transparent Background)",
             "Wagon Zone Descriptive",
-            "Wagon Zone Descriptive (Transparent)"
+            "Wagon Zone Descriptive (Transparent)",
+            "Dismissal Plot (White Background)",
+            "Dismissal Plot (Transparent Background)"
         ]
     )
 
-    fig_spike, fig_wagon, fig_spike_trans, fig_wagon_trans, fig_spike_desc, fig_wagon_desc, fig_spike_desc_trans, fig_wagon_desc_trans = None, None, None, None, None, None, None, None
+    fig_spike, fig_wagon, fig_spike_trans, fig_wagon_trans, fig_spike_desc, fig_wagon_desc, fig_spike_desc_trans, fig_wagon_desc_trans, fig_dismissal, fig_dismissal_trans = None, None, None, None, None, None, None, None, None, None
 
     if plot_types:
         if "Spike Plot (White Background)" in plot_types:
@@ -1076,8 +1079,8 @@ if df is not None:
                         key="spike_trans_download"
                     )
 
-        if "Spike Graph Descriptive" in plot_types:
-            st.markdown("<h2 style='text-align: center;'>Spike Graph Descriptive</h2>", unsafe_allow_html=True)
+        if "Spike Plot Descriptive" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Spike Plot Descriptive</h2>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([2, 2, 2])
             
             with col1:
@@ -1108,7 +1111,7 @@ if df is not None:
                 show_ground_desc = st.checkbox("Show Ground Image", value=True, key="spike_desc_ground")
 
             with col3:
-                st.markdown("## Run Filter (Spike Graph)")
+                st.markdown("## Run Filter (Spike Plot)")
 
                 if "run_init_spike_desc" not in st.session_state:
                     st.session_state.run_init_spike_desc = True
@@ -1195,8 +1198,8 @@ if df is not None:
                         key="spike_desc_download"
                     )
 
-        if "Spike Graph Descriptive (Transparent)" in plot_types:
-            st.markdown("<h2 style='text-align: center;'>Spike Graph Descriptive (Transparent)</h2>", unsafe_allow_html=True)
+        if "Spike Plot Descriptive (Transparent)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Spike Plot Descriptive (Transparent)</h2>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([2, 2, 2])
             
             with col1:
@@ -1227,7 +1230,7 @@ if df is not None:
                 show_ground_desc_trans = st.checkbox("Show Ground Image", value=True, key="spike_desc_trans_ground")
 
             with col3:
-                st.markdown("## Run Filter (Spike Graph)")
+                st.markdown("## Run Filter (Spike Plot)")
 
                 if "run_init_spike_desc_trans" not in st.session_state:
                     st.session_state.run_init_spike_desc_trans = True
@@ -1776,6 +1779,182 @@ if df is not None:
                         key="wagon_desc_trans_download"
                     )
 
+        if "Dismissal Plot (White Background)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Dismissal Plot (White Background)</h2>", unsafe_allow_html=True)
+            col1, col2, col3 = st.columns([2, 2, 2])
+            
+            with col1:
+                show_title_dismissal = st.checkbox("Show Title", value=True, key="title_dismissal")
+                show_summary_dismissal = st.checkbox("Show Summary", value=True, key="summary_dismissal")
+                
+                # Shots Breakdown checkbox and multiselect
+                show_shots_breakdown_dismissal = st.checkbox("Show Shots Breakdown", value=True, key="shots_breakdown_dismissal")
+                
+                if show_shots_breakdown_dismissal:
+                    shots_breakdown_options_dismissal = st.multiselect(
+                        "Select Runs to Show",
+                        options=['0s', '1s', '2s', '3s', '4s', '6s'],
+                        default=['0s', '1s', '4s', '6s'],
+                        key="shots_options_dismissal"
+                    )
+                else:
+                    shots_breakdown_options_dismissal = []
+
+            with col3:
+                show_bowler_dismissal = st.checkbox("Show Bowler", value=True, key="bowler_dismissal")
+                show_ground_dismissal = st.checkbox("Show Ground", value=True, key="ground_dismissal")
+                show_control_dismissal = st.checkbox("Show Control %", value=True, key="control_dismissal")
+                show_prod_shot_dismissal = st.checkbox("Show Most Loose Shot", value=True, key="prod_shot_dismissal")
+                show_overs_dismissal = st.checkbox("Show Overs", value=True, key="overs_dismissal")
+                show_phase_dismissal = st.checkbox("Show Phase", value=True, key="phase_dismissal")
+
+            try:
+                fig_dismissal = dismissal_plot(
+                    df, 
+                    player_name=selected_player_value, 
+                    pid=selected_pid,
+                    mat_num=selected_mat_num,
+                    inns=selected_inns,
+                    team_bat=selected_team_value,
+                    team_bowl=selected_team_bowl_value,
+                    bowler_name=bowler_name,
+                    bowler_id=bowler_id,
+                    competition=selected_competition_value,
+                    date_from=date_from,
+                    date_to=date_to,
+                    transparent=False,
+                    over_values=over_values,
+                    phase=phase,
+                    ground=selected_ground,
+                    mcode=selected_mcode,
+                    title_components=title_components,
+                    shots_breakdown_options=shots_breakdown_options_dismissal,
+                    bat_hand=bat_hand,
+                    bowl_type=bowl_type,
+                    bowl_kind=bowl_kind,
+                    bowl_arm=bowl_arm,
+                    show_title=show_title_dismissal,
+                    show_legend=False,
+                    show_summary=show_summary_dismissal,
+                    show_shots_breakdown=show_shots_breakdown_dismissal,
+                    show_fours_sixes=False,
+                    show_control=show_control_dismissal,
+                    show_prod_shot=show_prod_shot_dismissal,
+                    runs_count=False,
+                    show_bowler=show_bowler_dismissal,
+                    show_ground=show_ground_dismissal,
+                    show_overs=show_overs_dismissal,
+                    show_phase=show_phase_dismissal
+                )
+            except Exception as e:
+                st.error(f"Error generating dismissal plot: {str(e)}")
+                fig_dismissal = None
+            
+            with col2:
+                if fig_dismissal:
+                    st.pyplot(fig_dismissal)
+            
+            with col1:
+                if fig_dismissal:
+                    buf = BytesIO()
+                    fig_dismissal.savefig(buf, format='png', dpi=300, bbox_inches='tight')
+                    buf.seek(0)
+                    st.download_button(
+                        label="📅 Download Plot as PNG",
+                        data=buf.getvalue(),
+                        file_name=f"{selected_player}_dismissal_plot.png",
+                        mime="image/png",
+                        key="dismissal_download"
+                    )
+
+        if "Dismissal Plot (Transparent Background)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Dismissal Plot (Transparent Background)</h2>", unsafe_allow_html=True)
+            col1, col2, col3 = st.columns([2, 2, 2])
+            
+            with col1:
+                show_title_dismissal_trans = st.checkbox("Show Title", value=True, key="title_dismissal_trans")
+                show_summary_dismissal_trans = st.checkbox("Show Summary", value=True, key="summary_dismissal_trans")
+                
+                # Shots Breakdown checkbox and multiselect
+                show_shots_breakdown_dismissal_trans = st.checkbox("Show Shots Breakdown", value=True, key="shots_breakdown_dismissal_trans")
+                
+                if show_shots_breakdown_dismissal_trans:
+                    shots_breakdown_options_dismissal_trans = st.multiselect(
+                        "Select Runs to Show",
+                        options=['0s', '1s', '2s', '3s', '4s', '6s'],
+                        default=['0s', '1s', '4s', '6s'],
+                        key="shots_options_dismissal_trans"
+                    )
+                else:
+                    shots_breakdown_options_dismissal_trans = []
+
+            with col3:
+                show_bowler_dismissal_trans = st.checkbox("Show Bowler", value=True, key="bowler_dismissal_trans")
+                show_ground_dismissal_trans = st.checkbox("Show Ground", value=False, key="ground_dismissal_trans")
+                show_control_dismissal_trans = st.checkbox("Show Control %", value=True, key="control_dismissal_trans")
+                show_prod_shot_dismissal_trans = st.checkbox("Show Most Loose Shot", value=True, key="prod_shot_dismissal_trans")
+                show_overs_dismissal_trans = st.checkbox("Show Overs", value=True, key="overs_dismissal_trans")
+                show_phase_dismissal_trans = st.checkbox("Show Phase", value=True, key="phase_dismissal_trans")
+
+            try:
+                fig_dismissal_trans = dismissal_plot(
+                    df, 
+                    player_name=selected_player_value, 
+                    pid=selected_pid,
+                    mat_num=selected_mat_num,
+                    inns=selected_inns,
+                    team_bat=selected_team_value,
+                    team_bowl=selected_team_bowl_value,
+                    bowler_name=bowler_name,
+                    bowler_id=bowler_id,
+                    competition=selected_competition_value,
+                    date_from=date_from,
+                    date_to=date_to,
+                    transparent=True,
+                    over_values=over_values,
+                    phase=phase,
+                    ground=selected_ground,
+                    mcode=selected_mcode,
+                    title_components=title_components,
+                    shots_breakdown_options=shots_breakdown_options_dismissal_trans,
+                    bat_hand=bat_hand,
+                    bowl_type=bowl_type,
+                    bowl_kind=bowl_kind,
+                    bowl_arm=bowl_arm,
+                    show_title=show_title_dismissal_trans,
+                    show_legend=False,
+                    show_summary=show_summary_dismissal_trans,
+                    show_shots_breakdown=show_shots_breakdown_dismissal_trans,
+                    show_fours_sixes=False,
+                    show_control=show_control_dismissal_trans,
+                    show_prod_shot=show_prod_shot_dismissal_trans,
+                    runs_count=False,
+                    show_bowler=show_bowler_dismissal_trans,
+                    show_ground=show_ground_dismissal_trans,
+                    show_overs=show_overs_dismissal_trans,
+                    show_phase=show_phase_dismissal_trans
+                )
+            except Exception as e:
+                st.error(f"Error generating dismissal plot (transparent): {str(e)}")
+                fig_dismissal_trans = None
+            
+            with col2:
+                if fig_dismissal_trans:
+                    st.pyplot(fig_dismissal_trans)
+            
+            with col1:
+                if fig_dismissal_trans:
+                    buf = BytesIO()
+                    fig_dismissal_trans.savefig(buf, format='png', transparent=True, dpi=300, bbox_inches='tight')
+                    buf.seek(0)
+                    st.download_button(
+                        label="📅 Download Plot as PNG",
+                        data=buf.getvalue(),
+                        file_name=f"{selected_player}_dismissal_plot_transparent.png",
+                        mime="image/png",
+                        key="dismissal_trans_download"
+                    )
+
         # ZIP Download Section
         # After all 8 plot sections
     # ===== DOWNLOAD ALL PLOTS AS ZIP =====
@@ -1809,6 +1988,12 @@ if df is not None:
             
         if fig_wagon_desc_trans is not None:
             all_figures[f"{selected_player}_wagon_zone_descriptive_transparent.png"] = fig_wagon_desc_trans
+        
+        if fig_dismissal is not None:
+            all_figures[f"{selected_player}_dismissal_plot.png"] = fig_dismissal
+            
+        if fig_dismissal_trans is not None:
+            all_figures[f"{selected_player}_dismissal_plot_transparent.png"] = fig_dismissal_trans
         
         if all_figures:
             player_text = selected_player if selected_player != "All" else "AllPlayers"
