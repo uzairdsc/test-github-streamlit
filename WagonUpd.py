@@ -10,9 +10,10 @@ def wagon_zone_plot(
     df, player_name=None, pid=None, inns=None, mat_num=None, bowler_name=None, team_bat=None, 
     team_bowl=None, run_values=None, competition=None, transparent=False, ground=None,
     date_from=None, date_to=None, over_values=None, phase=None, bowler_id=None, mcode=None,
+    title_components=['title', 'filters'],
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
     show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, 
-    show_prod_shot=True,runs_count=True, show_bowler=True, show_overs_phase=True
+    show_prod_shot=True,runs_count=True, show_bowler=True, show_overs=True, show_phase=True
 ):
     # ---- Apply Filters for Plotting ----
     local_df = df.copy()
@@ -348,14 +349,36 @@ def wagon_zone_plot(
                 title_name = "All Players"
                 title_opponent = "All Teams"
         
-        ax.set_title(
-            f"{title_name} vs {title_opponent} | {competition} - Mat '{mat_num}', Inns: '{inns}'".upper(),
-            fontsize=12, fontweight='bold', fontfamily='DejaVu Sans'
-        )
+        # ax.set_title(
+        #     f"{title_name} vs {title_opponent} | {competition} - Mat '{mat_num}', Inns: '{inns}'".upper(),
+        #     fontsize=12, fontweight='bold', fontfamily='DejaVu Sans'
+        # )
+
+        title_part=[]
+
+        if 'title' in title_components:
+            title_part.append(f"{title_name} vs {title_opponent}")
+
+        if 'filters' in title_components:
+            title_part.append(f"{competition} - Mat '{mat_num}', Inns: '{inns}'")
+
+        title_text = " | ".join(title_part).upper()
+
+    if show_title:
+        if len(title_components) == 1:
+            # Shorter title - keep centered
+            title_x = 180
+            # title_y = 400  # Slightly lower for single line
+        else:
+            # Full title - original position
+            title_x = 180
+            # title_y = 408
+
+        ax.text(title_x, -60, title_text, fontsize=12, fontweight='bold', fontfamily='DejaVu Sans', ha='center')
 
     # Text Summary
     if show_summary:
-        ax.text(200, -40, f"Total Runs: {innings_runs} ({balls_faced} balls)",
+        ax.text(200, -40, f"Total Runs: {innings_runs} ({balls_faced} balls)| Strike Rate: {round(innings_runs/balls_faced*100, 2) if balls_faced > 0 else 0}",
                 fontsize=11, ha='center', fontweight='bold', color='darkgreen')
         ax.text(200, -25, f"Total 4s: {total_4s} | 6s: {total_6s}",
                 fontsize=11, ha='center', color='darkgreen')
@@ -368,6 +391,12 @@ def wagon_zone_plot(
         ax.text(430, 155, f"4s: {int(player_data['isFour'].sum())} | 6s: {int(player_data['isSix'].sum())}",
                 fontsize=11, ha='center', color='darkgreen')
 
+    if show_bowler:
+        if bowler_name is None:
+            bowler_name = 'All Bowlers'
+        ax.text(430, 170, f"vs {bowler_name}", fontsize=11, ha='center',
+                color='blue', fontweight='bold')
+        
     if show_control:
         ax.text(430, 80, f"Control: {control_pct}%", fontsize=12, ha='center',
                 color='purple', fontweight='bold')
@@ -376,13 +405,8 @@ def wagon_zone_plot(
         ax.text(430, 250, f"Productive Shot:\n{most_prod_shot_text}", fontsize=11,
                 ha='center', color='navy', fontweight='bold')
 
-    if show_bowler:
-        if bowler_name is None:
-            bowler_name = 'All Bowlers'
-        ax.text(430, 170, f"vs {bowler_name}", fontsize=11, ha='center',
-                color='blue', fontweight='bold')
 
-    if show_overs_phase:
+    if show_overs:
         # 1. Format Overs text
         if over_values is None:
             over_text = "All"
@@ -391,6 +415,12 @@ def wagon_zone_plot(
         else:
             over_text = f"{min(over_values)}-{max(over_values)} ({len(over_values)} overs)"
 
+
+        # 3. Display on plot (below productive shot at 430, 250)
+        ax.text(430, 300, f"Overs: {over_text}", 
+                fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
+
+    if show_phase:
         # 2. Format Phase text
         phase_names = {
             1: "Powerplay (1-6)",
@@ -398,10 +428,6 @@ def wagon_zone_plot(
             3: "Death (16-20)"
         }
         phase_text = phase_names.get(phase, "All")
-
-        # 3. Display on plot (below productive shot at 430, 250)
-        ax.text(430, 300, f"Overs: {over_text}", 
-                fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
         ax.text(430, 320, f"Phase: {phase_text}", 
                 fontsize=10, ha='center', color='crimson', fontweight='bold')
     
@@ -439,9 +465,10 @@ def wagon_zone_plot_descriptive(
     df, player_name=None, pid=None, inns=None, mat_num=None, bowler_name=None, team_bat=None, 
     team_bowl=None, run_values=None, competition=None, transparent=False, ground=None,
     date_from=None, date_to=None, over_values=None, phase=None, bowler_id=None, mcode=None,
+    title_components=['title', 'filters'],
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
     show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, 
-    show_prod_shot=True,runs_count=True, show_bowler=True, show_overs_phase=True
+    show_prod_shot=True,runs_count=True, show_bowler=True, show_overs=True, show_phase=True
 ):
     # ---- Apply Filters for Plotting ----
     local_df = df.copy()
@@ -779,11 +806,21 @@ def wagon_zone_plot_descriptive(
         #     f"{title_name} vs {title_opponent} | {competition} - Mat '{mat_num}', Inns: '{inns}'".upper(),
         #     fontsize=12, fontweight='bold', fontfamily='DejaVu Sans'
         # )
-        title_text = f"{title_name} vs {title_opponent} | {competition} - Mat '{mat_num}', Inns: '{inns}'".upper()
+        # title_text = f"{title_name} vs {title_opponent} | {competition} - Mat '{mat_num}', Inns: '{inns}'".upper()
+
+        title_parts = []
+
+        if 'title' in title_components:
+            title_parts.append(f"{title_name} vs {title_opponent}")
+    
+        if 'filters' in title_components:
+            title_parts.append(f"{competition} - Mat '{mat_num}', Inns: '{inns}'")
+        
+        title_text = " | ".join(title_parts).upper()
 
     # Text Summary
     if show_summary:
-        ax.text(180, 420, f"Total Runs: {innings_runs} ({balls_faced} balls)",
+        ax.text(180, 420, f"Total Runs: {innings_runs} ({balls_faced} balls) | Strike Rate: {round((innings_runs/balls_faced)*100, 2) if balls_faced > 0 else 0.0}",
                 fontsize=11, ha='center', fontweight='bold', color='darkgreen')
         ax.text(180, 438, f"Total 4s: {total_4s} | 6s: {total_6s}",
                 fontsize=11, ha='center', color='darkgreen')
@@ -813,16 +850,54 @@ def wagon_zone_plot_descriptive(
     
     #  update the positions of the summary texts
     if runs_count:
-        ax.text(50, 475, f"{total_score} ({balls_faced} balls)",
+        if not show_fours_sixes and not show_bowler:
+            ax.text(180, 475, f"{total_score} ({balls_faced} balls)",
                 fontsize=11, ha='center', fontweight='bold')
+        else:
+            ax.text(50, 475, f"{total_score} ({balls_faced} balls)",
+                fontsize=11, ha='center', fontweight='bold')
+        # ax.text(50, 475, f"{total_score} ({balls_faced} balls)",
+        #         fontsize=11, ha='center', fontweight='bold')
 
     if show_fours_sixes:
-        ax.text(180, 475, f" - 4s: {int(player_data['isFour'].sum())} | 6s: {int(player_data['isSix'].sum())}",
+        if not runs_count  and not show_bowler:
+            ax.text(180, 475, f"4s: {int(player_data['isFour'].sum())} | 6s: {int(player_data['isSix'].sum())}",
                 fontsize=11, ha='center', color='darkgreen')
+        else:
+            ax.text(180, 475, f" | 4s: {int(player_data['isFour'].sum())} | 6s: {int(player_data['isSix'].sum())}",
+                fontsize=11, ha='center', color='darkgreen')
+        # ax.text(180, 475, f" | 4s: {int(player_data['isFour'].sum())} | 6s: {int(player_data['isSix'].sum())}",
+        #         fontsize=11, ha='center', color='darkgreen')
+    
+    if show_bowler:
+        if bowler_name is None:
+            bowler_name = 'All Bowlers'
+
+        if not runs_count and not show_fours_sixes:
+            ax.text(180, 475, f"vs {bowler_name}", fontsize=11, ha='center',
+                color='blue', fontweight='bold')
+        else:
+            ax.text(300, 475, f" | vs {bowler_name}", fontsize=11, ha='center',
+                color='blue', fontweight='bold')
+        # ax.text(300, 475, f" | vs {bowler_name}", fontsize=11, ha='center',
+        #         color='blue', fontweight='bold')
 
     if show_title:
-        ax.text(180, 400, title_text, fontsize=12, ha='center', 
-            fontweight='bold', fontfamily='DejaVu Sans')
+        # ax.text(180, 400, title_text, fontsize=12, ha='center', 
+        #     fontweight='bold', fontfamily='DejaVu Sans')
+        # Adjust position based on title length
+        if len(title_components) == 1:
+            # Shorter title - keep centered
+            title_x = 180
+            title_y = 400  # Slightly lower for single line
+            ax.set_xlim(-60, 420)
+        else:
+            # Full title - original position
+            title_x = 180
+            title_y = 400
+        
+        ax.text(title_x, title_y, title_text, fontsize=12, ha='center', 
+                fontweight='bold', fontfamily='DejaVu Sans')
     
     if show_control:
         ax.text(180, 458, f"Control: {control_pct}%", fontsize=12, ha='center',
@@ -832,13 +907,8 @@ def wagon_zone_plot_descriptive(
         ax.text(180, 495, f"Productive Shot: {most_prod_shot_text}", fontsize=11,
                 ha='center', color='navy', fontweight='bold')
 
-    if show_bowler:
-        if bowler_name is None:
-            bowler_name = 'All Bowlers'
-        ax.text(300, 475, f" - vs {bowler_name}", fontsize=11, ha='center',
-                color='blue', fontweight='bold')
         
-    if show_overs_phase:
+    if show_overs:
         # 1. Format Overs text
         if over_values is None:
             over_text = "All"
@@ -847,6 +917,17 @@ def wagon_zone_plot_descriptive(
         else:
             over_text = f"{min(over_values)}-{max(over_values)} ({len(over_values)} overs)"
 
+        if not show_phase:
+            ax.text(180, 520, f"Overs: {over_text}", 
+                fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
+        else:
+            ax.text(100, 520, f"Overs: {over_text}", 
+                fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
+        # 3. Display on plot (below productive shot at 430, 250)
+        # ax.text(100, 520, f"Overs: {over_text}", 
+        #         fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
+        
+    if show_phase:
         # 2. Format Phase text
         phase_names = {
             1: "Powerplay (1-6)",
@@ -855,11 +936,15 @@ def wagon_zone_plot_descriptive(
         }
         phase_text = phase_names.get(phase, "All")
 
-        # 3. Display on plot (below productive shot at 430, 250)
-        ax.text(100, 520, f"Overs: {over_text}", 
-                fontsize=10, ha='center', color='darkslategrey', fontweight='bold')
-        ax.text(220, 520, f"Phase: {phase_text}", 
+        if not show_overs:
+            ax.text(180, 520, f"Phase: {phase_text}", 
                 fontsize=10, ha='center', color='crimson', fontweight='bold')
+        else:
+            ax.text(220, 520, f"Phase: {phase_text}", 
+                fontsize=10, ha='center', color='crimson', fontweight='bold')
+
+        # ax.text(220, 520, f"Phase: {phase_text}", 
+        #         fontsize=10, ha='center', color='crimson', fontweight='bold')
 
     
     # plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07)
