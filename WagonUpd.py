@@ -10,9 +10,9 @@ def wagon_zone_plot(
     df, player_name=None, pid=None, inns=None, mat_num=None, bowler_name=None, team_bat=None, 
     team_bowl=None, run_values=None, competition=None, transparent=False, ground=None,
     date_from=None, date_to=None, over_values=None, phase=None, bowler_id=None, mcode=None,
-    title_components=['title', 'filters'],
+    title_components=['title', 'filters'], shots_breakdown_options=['0s', '1s', '2s', '3s', '4s', '6s'],  # NEW: Which runs to show
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
-    show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, 
+    show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, show_shots_breakdown=True,
     show_prod_shot=True,runs_count=True, show_bowler=True, show_overs=True, show_phase=True
 ):
     # ---- Apply Filters for Plotting ----
@@ -129,6 +129,11 @@ def wagon_zone_plot(
         #logic update for generalization
         total_4s = (valid_shots['outcome'] == 'four').sum()
         total_6s = (valid_shots['outcome'] == 'six').sum()
+
+        total_0s = (valid_shots['batruns'] == 0).sum()
+        total_1s = (valid_shots['batruns'] == 1).sum()
+        total_2s = (valid_shots['batruns'] == 2).sum()
+        total_3s = (valid_shots['batruns'] == 3).sum()
 
         balls_faced = valid_balls.shape[0]
 
@@ -380,8 +385,29 @@ def wagon_zone_plot(
     if show_summary:
         ax.text(200, -40, f"Total Runs: {innings_runs} ({balls_faced} balls)| Strike Rate: {round(innings_runs/balls_faced*100, 2) if balls_faced > 0 else 0}",
                 fontsize=11, ha='center', fontweight='bold', color='darkgreen')
-        ax.text(200, -25, f"Total 4s: {total_4s} | 6s: {total_6s}",
-                fontsize=11, ha='center', color='darkgreen')
+        # ax.text(200, -25, f"0s x {total_0s} | 1s x {total_1s} | 2s x {total_2s} | 3s x {total_3s} | 4s x {total_4s} | 6s x {total_6s}",
+        # ax.text(200, -25, f"4s x {total_4s} | 6s x {total_6s}",
+        #         fontsize=11, ha='center', color='darkgreen')
+
+    if show_shots_breakdown:
+        # Build breakdown text dynamically
+        breakdown_parts = []
+        if '0s' in shots_breakdown_options:
+            breakdown_parts.append(f"0s x {total_0s}")
+        if '1s' in shots_breakdown_options:
+            breakdown_parts.append(f"1s x {total_1s}")
+        if '2s' in shots_breakdown_options:
+            breakdown_parts.append(f"2s x {total_2s}")
+        if '3s' in shots_breakdown_options:
+            breakdown_parts.append(f"3s x {total_3s}")
+        if '4s' in shots_breakdown_options:
+            breakdown_parts.append(f"4s x {total_4s}")
+        if '6s' in shots_breakdown_options:
+            breakdown_parts.append(f"6s x {total_6s}")
+        
+        if breakdown_parts:  # Only show if something selected
+            breakdown_text = " | ".join(breakdown_parts)
+            ax.text(200, -25, breakdown_text, fontsize=11, ha='center', color='darkgreen')
 
     if runs_count:
         ax.text(430, 140, f"{total_score} ({balls_faced} balls)",
@@ -465,8 +491,8 @@ def wagon_zone_plot_descriptive(
     df, player_name=None, pid=None, inns=None, mat_num=None, bowler_name=None, team_bat=None, 
     team_bowl=None, run_values=None, competition=None, transparent=False, ground=None,
     date_from=None, date_to=None, over_values=None, phase=None, bowler_id=None, mcode=None,
-    title_components=['title', 'filters'],
-    bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
+    title_components=['title', 'filters'], shots_breakdown_options=['0s', '1s', '2s', '3s', '4s', '6s'],  # NEW: Which runs to show
+    bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None, show_shots_breakdown=True,
     show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, 
     show_prod_shot=True,runs_count=True, show_bowler=True, show_overs=True, show_phase=True
 ):
@@ -583,6 +609,12 @@ def wagon_zone_plot_descriptive(
         total_4s = (valid_shots['outcome'] == 'four').sum()
         total_6s = (valid_shots['outcome'] == 'six').sum()
 
+        total_0s = (valid_shots['batruns'] == 0).sum()
+        total_1s = (valid_shots['batruns'] == 1).sum()
+        total_2s = (valid_shots['batruns'] == 2).sum()
+        total_3s = (valid_shots['batruns'] == 3).sum()
+
+
         balls_faced = valid_balls.shape[0]
 
         # control_pct = round(
@@ -593,7 +625,6 @@ def wagon_zone_plot_descriptive(
         controlled_balls = valid_balls[valid_balls['control'] == 1]
         control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2) if len(valid_balls) > 0 else 0.0
 
-        
 
         shot_summary = valid_shots.groupby('shot').agg({ #shot
             'score': 'sum', #score
@@ -616,6 +647,11 @@ def wagon_zone_plot_descriptive(
         total_4s = (valid_shots['outcome'] == 'four').sum()
         total_6s = (valid_shots['outcome'] == 'six').sum()
         
+        total_0s = (valid_shots['batruns'] == 0).sum()
+        total_1s = (valid_shots['batruns'] == 1).sum()
+        total_2s = (valid_shots['batruns'] == 2).sum()
+        total_3s = (valid_shots['batruns'] == 3).sum()
+
         balls_faced = valid_balls.shape[0]
 
         # control_pct = round(
@@ -822,8 +858,29 @@ def wagon_zone_plot_descriptive(
     if show_summary:
         ax.text(180, 420, f"Total Runs: {innings_runs} ({balls_faced} balls) | Strike Rate: {round((innings_runs/balls_faced)*100, 2) if balls_faced > 0 else 0.0}",
                 fontsize=11, ha='center', fontweight='bold', color='darkgreen')
-        ax.text(180, 438, f"Total 4s: {total_4s} | 6s: {total_6s}",
-                fontsize=11, ha='center', color='darkgreen')
+        # # ax.text(180, 438, f"4s x {total_4s} | 6s x {total_6s}",
+        # ax.text(180, 438, f"0s x {total_0s} | 1s x {total_1s} | 4s x {total_4s} | 6s x {total_6s}",
+        #         fontsize=11, ha='center', color='darkgreen')
+
+    if show_shots_breakdown:
+        # Build breakdown text dynamically
+        breakdown_parts = []
+        if '0s' in shots_breakdown_options:
+            breakdown_parts.append(f"0s x {total_0s}")
+        if '1s' in shots_breakdown_options:
+            breakdown_parts.append(f"1s x {total_1s}")
+        if '2s' in shots_breakdown_options:
+            breakdown_parts.append(f"2s x {total_2s}")
+        if '3s' in shots_breakdown_options:
+            breakdown_parts.append(f"3s x {total_3s}")
+        if '4s' in shots_breakdown_options:
+            breakdown_parts.append(f"4s x {total_4s}")
+        if '6s' in shots_breakdown_options:
+            breakdown_parts.append(f"6s x {total_6s}")
+        
+        if breakdown_parts:  # Only show if something selected
+            breakdown_text = " | ".join(breakdown_parts)
+            ax.text(180, 438, breakdown_text, fontsize=11, ha='center', color='darkgreen')
 
     # if runs_count:
     #     ax.text(430, 140, f"{total_score} ({balls_faced} balls)",
