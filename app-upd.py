@@ -317,7 +317,8 @@ if st.session_state.df is not None:
     #     type=["xlsx", "csv"],
     #     key="squad_upload"
     # )
-    squad_file = "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx"
+    # squad_file = "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx"
+    squad_file = "data/2026-WT20-Squads.xlsx"
 
     if squad_file:
         # Read squad file
@@ -2014,3 +2015,4 @@ if df is not None:
 
 else:
     st.info("Please select a dataset source to begin.")
+
