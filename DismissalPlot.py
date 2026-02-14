@@ -75,9 +75,9 @@ def dismissal_plot(
         if phase == 1 or phase == "Powerplay":
             local_df = local_df[local_df['over'].between(1, 6)]
         elif phase == 2 or phase == "Middle":
-            local_df = local_df[local_df['over'].between(7, 16)]
+            local_df = local_df[local_df['over'].between(7, 15)]
         elif phase == 3 or phase == "Death":
-            local_df = local_df[local_df['over'].between(17, 20)]
+            local_df = local_df[local_df['over'].between(16, 20)]
 
     # Date range filter
     if date_from is not None:
