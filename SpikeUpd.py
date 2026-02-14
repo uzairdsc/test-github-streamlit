@@ -707,7 +707,7 @@ def spike_graph_plot_descriptive(
     title_components=["title", "filters"], shots_breakdown_options=['0s', '1s', '2s', '3s', '4s', '6s'],
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
     show_title=True, show_legend=True, show_summary=True, show_shots_breakdown=True,
-    show_fours_sixes=True, show_control=True, show_prod_shot=True, 
+    show_fours_sixes=True, show_control=True, show_prod_shot=True, show_bowl_type=True, show_bowl_kind=True,
     runs_count=True, show_bowler=True, show_ground=True, show_overs=True, show_phase=True
 ):
     # score_colors = {
@@ -1185,7 +1185,7 @@ def spike_graph_plot_descriptive(
     # ax.set_xlim(-20, 470)
     # ax.set_ylim(-30, 370)
     ax.set_xlim(-20, 380)
-    ax.set_ylim(-30, 580)
+    ax.set_ylim(-30, 610)
     ax.set_xticks([]), ax.set_yticks([])
     ax.set_xticklabels([]), ax.set_yticklabels([])
     ax.set_aspect('equal', adjustable='box')
@@ -1429,6 +1429,29 @@ def spike_graph_plot_descriptive(
         # ax.text(260, 570, f"Phase: {phase_text}", 
         #         fontsize=10, ha='center', color='crimson', fontweight='bold')
     
+    if show_bowl_type:
+        # Format bowl_type text
+        bowl_type_text = bowl_type if bowl_type is not None else "All"
+        
+        # Responsive positioning
+        if not show_bowl_kind:
+            ax.text(180, 590, f"Bowl Type: {bowl_type_text}", 
+                    fontsize=10, ha='center', color='darkviolet', fontweight='bold')
+        else:
+            ax.text(70, 590, f"Bowl Type: {bowl_type_text}", 
+                    fontsize=10, ha='center', color='darkviolet', fontweight='bold')
+
+    if show_bowl_kind:
+        # Format bowl_kind text
+        bowl_kind_text = bowl_kind if bowl_kind is not None else "All"
+        
+        # Responsive positioning
+        if not show_bowl_type:
+            ax.text(180, 590, f"Bowl Pace: {bowl_kind_text}", 
+                    fontsize=10, ha='center', color='teal', fontweight='bold')
+        else:
+            ax.text(290, 590, f"Bowl Pace: {bowl_kind_text}", 
+                    fontsize=10, ha='center', color='teal', fontweight='bold')
     # plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07)
     plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.02)
     plt.close(fig)
