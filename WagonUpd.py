@@ -21,7 +21,8 @@ def wagon_zone_plot(
 
     # Filter by PID if provided (takes priority)
     if pid is not None:
-        local_df = local_df[local_df['p_bat'] == pid]
+        # local_df = local_df[local_df['p_bat'] == pid]
+        local_df = local_df[local_df['p_bat'].astype(str) == str(pid)]
         # Auto-get player name from PID for display
         if not local_df.empty and player_name is None:
             player_name = local_df['bat'].iloc[0]
@@ -503,7 +504,8 @@ def wagon_zone_plot_descriptive(
 
     # Filter by PID if provided (takes priority)
     if pid is not None:
-        local_df = local_df[local_df['p_bat'] == pid]
+        # local_df = local_df[local_df['p_bat'] == pid]
+        local_df = local_df[local_df['p_bat'].astype(str) == str(pid)]
         # Auto-get player name from PID for display
         if not local_df.empty and player_name is None:
             player_name = local_df['bat'].iloc[0]

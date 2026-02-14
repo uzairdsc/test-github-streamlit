@@ -49,7 +49,8 @@ def spike_graph_plot(
 
     # Filter by PID if provided (takes priority)
     if pid is not None:
-        local_df = local_df[local_df['p_bat'] == pid]
+        # local_df = local_df[local_df['p_bat'] == pid]
+        local_df = local_df[local_df['p_bat'].astype(str) == str(pid)]
         # Auto-get player name from PID for display
         if not local_df.empty and player_name is None:
             player_name = local_df['bat'].iloc[0]
@@ -57,12 +58,12 @@ def spike_graph_plot(
     elif player_name is not None:
         local_df = local_df[local_df['bat'] == player_name]
 
-    if player_name is not None:
-        local_df = df[
-            (df['bat'] == player_name)
-        ].copy()
-    else:
-        local_df = df.copy()
+    # if player_name is not None:
+    #     local_df = df[
+    #         (df['bat'] == player_name)
+    #     ].copy()
+    # else:
+    #     local_df = df.copy()
 
     if mat_num is not None:
         local_df = local_df[local_df['p_match'] == mat_num]
@@ -742,7 +743,8 @@ def spike_graph_plot_descriptive(
 
     # Filter by PID if provided (takes priority)
     if pid is not None:
-        local_df = local_df[local_df['p_bat'] == pid]
+        # local_df = local_df[local_df['p_bat'] == pid]
+        local_df = local_df[local_df['p_bat'].astype(str) == str(pid)]
         # Auto-get player name from PID for display
         if not local_df.empty and player_name is None:
             player_name = local_df['bat'].iloc[0]
@@ -750,12 +752,12 @@ def spike_graph_plot_descriptive(
     elif player_name is not None:
         local_df = local_df[local_df['bat'] == player_name]
 
-    if player_name is not None:
-        local_df = df[
-            (df['bat'] == player_name)
-        ].copy()
-    else:
-        local_df = df.copy()
+    # if player_name is not None:
+    #     local_df = df[
+    #         (df['bat'] == player_name)
+    #     ].copy()
+    # else:
+    #     local_df = df.copy()
 
     if mat_num is not None:
         local_df = local_df[local_df['p_match'] == mat_num]

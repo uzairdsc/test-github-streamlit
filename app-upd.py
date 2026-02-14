@@ -96,7 +96,7 @@ def create_zip_of_plots(figures_dict):
 st.sidebar.header("📂 Select Dataset Source")
 data_source = st.sidebar.selectbox(
     "Choose data source:",
-    ["Upload Data File", "S3_2026-WT20-bbb", "S3_HG_2026-WT20-bbb", "S3_since26" ,"S3_since24", "S3_since24WC", "S3_all", "Cache_all", "Cache_since24", "Cache_since24WC"]
+    ["Upload Data File", "S3_2026-WT20-bbb", "S3_since26" ,"S3_since24", "S3_since24WC", "S3_all", "S3_HG_2026-WT20-bbb", "Cache_all", "Cache_since24", "Cache_since24WC"]
 )
 
 # Initialize session state for df
