@@ -12,6 +12,7 @@ def wagon_zone_plot(
     date_from=None, date_to=None, over_values=None, phase=None, bowler_id=None, mcode=None,
     title_components=['title', 'filters'], shots_breakdown_options=['0s', '1s', '2s', '3s', '4s', '6s'],  # NEW: Which runs to show
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
+    show_bowl_type=True, show_bowl_kind=True, show_bowl_arm=True,
     show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, show_shots_breakdown=True,
     show_prod_shot=True,runs_count=True, show_bowler=True, show_overs=True, show_phase=True
 ):
@@ -494,7 +495,7 @@ def wagon_zone_plot_descriptive(
     title_components=['title', 'filters'], shots_breakdown_options=['0s', '1s', '2s', '3s', '4s', '6s'],  # NEW: Which runs to show
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None, show_shots_breakdown=True,
     show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, 
-    show_bowl_type=True, show_bowl_kind=True,
+    show_bowl_type=True, show_bowl_kind=True, show_bowl_arm=True,
     show_prod_shot=True,runs_count=True, show_bowler=True, show_overs=True, show_phase=True
 ):
     # ---- Apply Filters for Plotting ----
@@ -575,14 +576,24 @@ def wagon_zone_plot_descriptive(
     if bat_hand is not None:
         local_df = local_df[local_df['bat_hand'] == bat_hand]
 
-    if bowl_type is not None:
-        local_df = local_df[local_df['bowl_type'] == bowl_type]
+    # if bowl_type is not None:
+    #     local_df = local_df[local_df['bowl_type'] == bowl_type]
 
-    if bowl_kind is not None:
-        local_df = local_df[local_df['bowl_kind'] == bowl_kind]
+    # if bowl_kind is not None:
+    #     local_df = local_df[local_df['bowl_kind'] == bowl_kind]
         
-    if bowl_arm is not None:
-        local_df = local_df[local_df['bowl_arm'] == bowl_arm]
+    # if bowl_arm is not None:
+    #     local_df = local_df[local_df['bowl_arm'] == bowl_arm]
+
+    # updated change of multiselect
+    if bowl_type is not None and len(bowl_type) > 0:
+        local_df = local_df[local_df['bowl_type'].isin(bowl_type)]
+
+    if bowl_kind is not None and len(bowl_kind) > 0:
+        local_df = local_df[local_df['bowl_kind'].isin(bowl_kind)]
+
+    if bowl_arm is not None and len(bowl_arm) > 0:
+        local_df = local_df[local_df['bowl_arm'].isin(bowl_arm)]
 
         
     if player_name is None:
@@ -1006,31 +1017,67 @@ def wagon_zone_plot_descriptive(
 
     if show_bowl_type:
         # Format bowl_type text
-        bowl_type_text = bowl_type if bowl_type is not None else "All"
+        # bowl_type_text = bowl_type if bowl_type is not None else "All"
         
+        if bowl_type is None or len(bowl_type) == 0:
+            bowl_type_text = "All"
+        elif len(bowl_type) == 1:
+            bowl_type_text = bowl_type[0]
+        else:
+            bowl_type_text = ", ".join(bowl_type)
+
         # Responsive positioning
         if not show_bowl_kind:
             ax.text(180, 540, f"Bowl Type: {bowl_type_text}", 
                     fontsize=10, ha='center', color='darkviolet', fontweight='bold')
         else:
-            ax.text(70, 540, f"Bowl Type: {bowl_type_text}", 
+            # ax.text(70, 540, f"Bowl Type: {bowl_type_text}", 
+            ax.text(180, 540, f"Bowl Type: {bowl_type_text}", 
                     fontsize=10, ha='center', color='darkviolet', fontweight='bold')
 
     if show_bowl_kind:
         # Format bowl_kind text
-        bowl_kind_text = bowl_kind if bowl_kind is not None else "All"
+        # bowl_kind_text = bowl_kind if bowl_kind is not None else "All"
+
+        if bowl_kind is None or len(bowl_kind) == 0:
+            bowl_kind_text = "All"
+        elif len(bowl_kind) == 1:
+            bowl_kind_text = bowl_kind[0]
+        else:
+            bowl_kind_text = ", ".join(bowl_kind)
         
         # Responsive positioning
-        if not show_bowl_type:
-            ax.text(180, 540, f"Bowl Pace: {bowl_kind_text}", 
+        if not show_bowl_arm:
+            ax.text(180, 560, f"Bowl Pace: {bowl_kind_text}", 
+            # ax.text(180, 540, f"Bowl Pace: {bowl_kind_text}", 
                     fontsize=10, ha='center', color='teal', fontweight='bold')
         else:
-            ax.text(290, 540, f"Bowl Pace: {bowl_kind_text}", 
+            # ax.text(290, 540, f"Bowl Pace: {bowl_kind_text}", 
+            ax.text(70, 560, f"Bowl Pace: {bowl_kind_text}", 
                     fontsize=10, ha='center', color='teal', fontweight='bold')
+
+
+    if show_bowl_arm:
+        # Format bowl_arm text
+        if bowl_arm is None or len(bowl_arm) == 0:
+            bowl_arm_text = "All"
+        elif len(bowl_arm) == 1:
+            bowl_arm_text = bowl_arm[0]
+        else:
+            bowl_arm_text = ", ".join(bowl_arm)
+        
+        # responsive
+        if not show_bowl_kind:
+            ax.text(180, 560, f"Bowl Arm: {bowl_arm_text}", 
+                    fontsize=10, ha='center', color='saddlebrown', fontweight='bold')
+        else:
+            ax.text(290, 560, f"Bowl Arm: {bowl_arm_text}", 
+                    fontsize=10, ha='center', color='saddlebrown', fontweight='bold')
+        
+    
+
     # plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07)
     plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.02)
-
-
     plt.close(fig)
     return fig
     # plt.show()

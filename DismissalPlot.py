@@ -16,20 +16,9 @@ def dismissal_plot(
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
     show_title=True, show_legend=True, show_summary=True, show_shots_breakdown=True,
     show_fours_sixes=True, show_control=True, show_prod_shot=True, 
-    show_bowl_type=True, show_bowl_kind=True,
+    show_bowl_type=True, show_bowl_kind=True, show_bowl_arm=True,
     runs_count=True, show_bowler=True, show_ground=True, show_overs=True, show_phase=True
 ):
-    # score_colors = {
-    #     # 0:  '#F70000',   
-    #     0:  '#8B0000',   
-    #     1:  "#FFA500",   
-    #     # 1:  "#ede4e4",   
-    #     2:  '#4169E1',   
-    #     3:  '#008080',   
-    #     4:  '#7CFC00',
-    #     5:  '#FF00FF',   
-    #     6:  '#FFBF00',   
-    # }
     score_colors = {
         0:  "#706B6C",   
         1:  "#FF5733",   
@@ -39,13 +28,6 @@ def dismissal_plot(
         5:  '#FFA500',   
         6:  '#7A41D8',   
     }
-    # Filter by match, player, and innings
-    # local_df = df[
-    #     (df['batsmanName'] == player_name) &
-    #     (df['TestNum']== test_num) if test_num is not None else True &
-    #     (df['inningNumber'] == inns) 
-    # ].copy()
-
 
     local_df = df.copy()
 
@@ -110,14 +92,25 @@ def dismissal_plot(
     if bat_hand is not None:
         local_df = local_df[local_df['bat_hand'] == bat_hand]
 
-    if bowl_type is not None:
-        local_df = local_df[local_df['bowl_type'] == bowl_type]
+    # if bowl_type is not None:
+    #     local_df = local_df[local_df['bowl_type'] == bowl_type]
 
-    if bowl_kind is not None:
-        local_df = local_df[local_df['bowl_kind'] == bowl_kind]
+    # if bowl_kind is not None:
+    #     local_df = local_df[local_df['bowl_kind'] == bowl_kind]
         
-    if bowl_arm is not None:
-        local_df = local_df[local_df['bowl_arm'] == bowl_arm]
+    # if bowl_arm is not None:
+    #     local_df = local_df[local_df['bowl_arm'] == bowl_arm]
+
+    # updated multiselect logic
+    # 2. Update filtering logic
+    if bowl_type is not None and len(bowl_type) > 0:
+        local_df = local_df[local_df['bowl_type'].isin(bowl_type)]
+
+    if bowl_kind is not None and len(bowl_kind) > 0:
+        local_df = local_df[local_df['bowl_kind'].isin(bowl_kind)]
+
+    if bowl_arm is not None and len(bowl_arm) > 0:
+        local_df = local_df[local_df['bowl_arm'].isin(bowl_arm)]
 
 
     #match code like PAK v NED
@@ -161,12 +154,7 @@ def dismissal_plot(
     if bowler_name:
         local_df = local_df[local_df['bowl'] == bowler_name]
 
-    # we have to calculate the team_bowl, by seeing the batsman_name and team_bats, the bowling team is the opposite of batting team
-    # team_bats = local_df['team_bat'].unique()[0]
-    # if team_bats == 'IND':
-    #     team_bowl = 'ENG'
-    # elif team_bats == 'ENG':
-    #     team_bowl = 'IND'
+  
     # Get unique batting teams
     batting_teams = local_df['team_bat'].dropna().unique()
     all_teams = pd.concat([local_df['team_bat'], local_df['team_bowl']]).dropna().unique()
@@ -399,7 +387,8 @@ def dismissal_plot(
     
     # NEW: All dismissal dots in red color
     if not player_data.empty:
-        player_data['color'] = '#FD3531'  # Red color for all dismissals
+        player_data['color'] = '#FD3531'   # Red color for all dismissals
+        # player_data['color'] = '#e30702'  # Red color for all dismissals
     else:
         player_data['color'] = pd.Series(dtype='str')
 
@@ -470,7 +459,8 @@ def dismissal_plot(
             s=50,  # Dot size
             alpha=0.8,
             zorder=2,
-            edgecolors='black',
+            edgecolors='#e30702',
+            # edgecolors='black',
             linewidth=1.2
         )
     else:
@@ -527,7 +517,7 @@ def dismissal_plot(
     # ax.set_xlim(-20, 470)
     # ax.set_ylim(-30, 370)
     ax.set_xlim(-20, 380)
-    ax.set_ylim(-30, 580)
+    ax.set_ylim(-30, 620)
     ax.set_xticks([]), ax.set_yticks([])
     ax.set_xticklabels([]), ax.set_yticklabels([])
     ax.set_aspect('equal', adjustable='box')
@@ -672,7 +662,7 @@ def dismissal_plot(
     #     #         fontsize=11, ha='center', color='darkgreen')
     
     # === NEW: Display Dismissals Count ===
-    ax.text(180, 540, f"Dismissals: {dismissals_count}",
+    ax.text(180, 545, f"Dismissals: {dismissals_count}",
             fontsize=12, ha='center', fontweight='bold', color='red')
         
     if show_bowler:
@@ -784,28 +774,62 @@ def dismissal_plot(
     
     if show_bowl_type:
         # Format bowl_type text
-        bowl_type_text = bowl_type if bowl_type is not None else "All"
+        # bowl_type_text = bowl_type if bowl_type is not None else "All"
+        if bowl_type is None or len(bowl_type) == 0:
+            bowl_type_text = "All"
+        elif len(bowl_type) == 1:
+            bowl_type_text = bowl_type[0]
+        else:
+            bowl_type_text = ", ".join(bowl_type)
         
         # Responsive positioning
         if not show_bowl_kind:
             ax.text(180, 590, f"     Type: {bowl_type_text}", 
                     fontsize=10, ha='center', color='darkviolet', fontweight='bold')
         else:
-            ax.text(70, 590, f"Bowl Type: {bowl_type_text}", 
+            ax.text(180, 590, f"Bowl Type: {bowl_type_text}", 
+            # ax.text(70, 590, f"Bowl Type: {bowl_type_text}", 
                     fontsize=10, ha='center', color='darkviolet', fontweight='bold')
 
     if show_bowl_kind:
         # Format bowl_kind text
-        bowl_kind_text = bowl_kind if bowl_kind is not None else "All"
+        # bowl_kind_text = bowl_kind if bowl_kind is not None else "All"
+
+        if bowl_kind is None or len(bowl_kind) == 0:
+            bowl_kind_text = "All"
+        elif len(bowl_kind) == 1:
+            bowl_kind_text = bowl_kind[0]
+        else:
+            bowl_kind_text = ", ".join(bowl_kind)
         
         # Responsive positioning
-        if not show_bowl_type:
-            ax.text(180, 590, f"Bowl Pace: {bowl_kind_text}", 
+        if not show_bowl_arm:
+            # ax.text(180, 590, f"Bowl Pace: {bowl_kind_text}", 
+            ax.text(180, 610, f"Bowl Pace: {bowl_kind_text}", 
                     fontsize=10, ha='center', color='teal', fontweight='bold')
         else:
-            ax.text(290, 590, f"Bowl Pace: {bowl_kind_text}", 
+            ax.text(70, 610, f"Bowl Pace: {bowl_kind_text}", 
+            # ax.text(290, 590, f"Bowl Pace: {bowl_kind_text}", 
                     fontsize=10, ha='center', color='teal', fontweight='bold')
             
+
+    if show_bowl_arm:
+        # Format bowl_arm text
+        if bowl_arm is None or len(bowl_arm) == 0:
+            bowl_arm_text = "All"
+        elif len(bowl_arm) == 1:
+            bowl_arm_text = bowl_arm[0]
+        else:
+            bowl_arm_text = ", ".join(bowl_arm)
+        
+        # Responsive positioning
+        if not show_bowl_kind:
+            ax.text(180, 610, f"Bowl Arm: {bowl_arm_text}", 
+                fontsize=10, ha='center', color='saddlebrown', fontweight='bold')
+        else: 
+            ax.text(270, 610, f"Bowl Arm: {bowl_arm_text}", 
+                fontsize=10, ha='center', color='saddlebrown', fontweight='bold')
+        
     # plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.07)
     plt.subplots_adjust(left=0.05, right=0.95, top=0.93, bottom=0.02)
     plt.close(fig)

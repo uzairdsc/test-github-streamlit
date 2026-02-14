@@ -96,7 +96,7 @@ def create_zip_of_plots(figures_dict):
 st.sidebar.header("📂 Select Dataset Source")
 data_source = st.sidebar.selectbox(
     "Choose data source:",
-    ["Upload Data File", "S3_2026-WT20-bbb", "S3_since26" ,"S3_since24", "S3_since24WC", "S3_all", "Cache_all", "Cache_since24", "Cache_since24WC"]
+    ["Upload Data File", "S3_2026-WT20-bbb", "S3_HG_2026-WT20-bbb", "S3_since26" ,"S3_since24", "S3_since24WC", "S3_all", "Cache_all", "Cache_since24", "Cache_since24WC"]
 )
 
 # Initialize session state for df
@@ -122,6 +122,30 @@ elif data_source == "S3_2026-WT20-bbb":
         s3_file_key = st.sidebar.text_input(
             "Enter S3 file path:",
             value="2026-WT20-bbb-data.csv"
+        )
+        
+        if st.sidebar.button("Load from S3", key="load_2025"):
+            loaded_df = load_from_s3(bucket, s3_file_key, access_key, secret_key, region)
+            if loaded_df is not None:
+                st.session_state.df = loaded_df
+                df = loaded_df
+        
+        # Show current loaded data info
+        if st.session_state.df is not None:
+            st.sidebar.info(f"Current data: {len(st.session_state.df):,} rows")
+    else:
+        st.sidebar.warning("⚠️ AWS credentials not configured in secrets.toml")
+
+elif data_source == "S3_HG_2026-WT20-bbb":
+    if "aws" in st.secrets:
+        bucket = st.secrets["aws"]["bucket_name"]
+        access_key = st.secrets["aws"]["access_key_id"]
+        secret_key = st.secrets["aws"]["secret_access_key"]
+        region = st.secrets["aws"].get("region_name", "ap-south-1")
+        
+        s3_file_key = st.sidebar.text_input(
+            "Enter S3 file path:",
+            value="t20_bbb_wt20.csv"
         )
         
         if st.sidebar.button("Load from S3", key="load_2025"):
@@ -317,8 +341,18 @@ if st.session_state.df is not None:
     #     type=["xlsx", "csv"],
     #     key="squad_upload"
     # )
+    
+    # squad_file = "data//2026-WT20-Squads.xlsx"
     # squad_file = "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx"
-    squad_file = "data/2026-WT20-Squads.xlsx"
+
+    try:
+        squad_file = "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx"
+    except FileNotFoundError:
+        try:
+            squad_file = "data/2026-WT20-Squads.xlsx"
+        except FileNotFoundError:
+            raise FileNotFoundError("Squad file not found in either location.")
+
 
     if squad_file:
         # Read squad file
@@ -384,12 +418,21 @@ if st.session_state.df is not None:
                                     progress = (idx + 1) / len(team_pids)
                                     progress_bar.progress(progress)
                                     
-                                    # Get player name
-                                    player_row = squad_df[squad_df['Bt-ID'] == str(pid)]
+                                    # Get player name from Squad file
+                                    player_row = squad_df[squad_df['Bt-ID'].astype(str) == str(pid)]
                                     if not player_row.empty and 'Player' in squad_df.columns:
                                         player_name = player_row['Player'].iloc[0]
+                                        # Clean player name for filename (remove spaces, special chars)
+                                        player_name = player_name.replace(" ", "_").replace("/", "_")
                                     else:
                                         player_name = f"Player_{pid}"
+                                    
+                                    # OLD LOGIC (commented out):
+                                    # player_row = squad_df[squad_df['Bt-ID'] == str(pid)]
+                                    # if not player_row.empty and 'Player' in squad_df.columns:
+                                    #     player_name = player_row['Player'].iloc[0]
+                                    # else:
+                                    #     player_name = f"Player_{pid}"
                                     
                                     status_text.text(f"Generating: {player_name} ({idx+1}/{len(team_pids)})")
                                     
@@ -449,7 +492,8 @@ if st.session_state.df is not None:
                                             'show_overs': True,
                                             'show_phase': True,
                                             'show_bowl_type': True,
-                                            'show_bowl_kind': True
+                                            'show_bowl_kind': True,
+                                            'show_bowl_arm': True 
                                         }
                                     else:
                                         batch_filters = {
@@ -478,7 +522,8 @@ if st.session_state.df is not None:
                                             'show_overs': True,
                                             'show_phase': True,
                                             'show_bowl_type': True,
-                                            'show_bowl_kind': True                                     
+                                            'show_bowl_kind': True,
+                                            'show_bowl_arm': True                                     
                                         }
                                     
                                     # Generate selected plots
@@ -731,39 +776,66 @@ if df is not None:
         # Bowler Type Filter (from working_df)
         if 'bowl_type' in working_df.columns:
             bowl_type_options = sorted(working_df['bowl_type'].dropna().unique())
-            bowl_type_display = ["All"] + list(bowl_type_options)
-            selected_bowl_type_str = st.selectbox("Bowler Type", bowl_type_display, index=0)
+            # bowl_type_display = ["All"] + list(bowl_type_options)
+            # selected_bowl_type_str = st.selectbox("Bowler Type", bowl_type_display, index=0)
             
-            if selected_bowl_type_str != "All":
-                bowl_type = selected_bowl_type_str
-            else:
-                bowl_type = None
+            # if selected_bowl_type_str != "All":
+            #     bowl_type = selected_bowl_type_str
+            # else:
+            #     bowl_type = None
+            # updated multiselect
+            selected_bowl_types = st.multiselect(
+                "Bowler Type(s)",
+                options=list(bowl_type_options),  # No "All" needed
+                default=[],  # Empty = All (no filter)
+                help="Leave empty to include all types"
+            )
+            bowl_type = selected_bowl_types if selected_bowl_types else None
+
         else:
             bowl_type = None
         
         # Bowler Kind Filter (from working_df)
         if 'bowl_kind' in working_df.columns:
             bowl_kind_options = sorted(working_df['bowl_kind'].dropna().unique())
-            bowl_kind_display = ["All"] + list(bowl_kind_options)
-            selected_bowl_kind_str = st.selectbox("Bowler Pace", bowl_kind_display, index=0)
+            # bowl_kind_display = ["All"] + list(bowl_kind_options)
+            # selected_bowl_kind_str = st.selectbox("Bowler Pace", bowl_kind_display, index=0)
             
-            if selected_bowl_kind_str != "All":
-                bowl_kind = selected_bowl_kind_str
-            else:
-                bowl_kind = None
+            # if selected_bowl_kind_str != "All":
+            #     bowl_kind = selected_bowl_kind_str
+            # else:
+            #     bowl_kind = None
+
+            selected_bowl_kinds = st.multiselect(
+                "Bowler Pace(s)",
+                options=list(bowl_kind_options),
+                default=[],
+                help="Leave empty to include all"
+            )
+            bowl_kind = selected_bowl_kinds if selected_bowl_kinds else None
+
         else:
             bowl_kind = None
         
         # Bowler Arm Filter (from working_df)
         if 'bowl_arm' in working_df.columns:
             bowl_arm_options = sorted(working_df['bowl_arm'].dropna().unique())
-            bowl_arm_display = ["All"] + list(bowl_arm_options)
-            selected_bowl_arm_str = st.selectbox("Bowler Arm", bowl_arm_display, index=0)
+            # bowl_arm_display = ["All"] + list(bowl_arm_options)
+            # selected_bowl_arm_str = st.selectbox("Bowler Arm", bowl_arm_display, index=0)
             
-            if selected_bowl_arm_str != "All":
-                bowl_arm = selected_bowl_arm_str
-            else:
-                bowl_arm = None
+            # if selected_bowl_arm_str != "All":
+            #     bowl_arm = selected_bowl_arm_str
+            # else:
+            #     bowl_arm = None
+
+            selected_bowl_arms = st.multiselect(
+                "Bowler Arm(s)",
+                options=list(bowl_arm_options),
+                default=[],
+                help="Leave empty to include all"
+            )
+            bowl_arm = selected_bowl_arms if selected_bowl_arms else None
+
         else:
             bowl_arm = None
     
@@ -1122,6 +1194,7 @@ if df is not None:
                 show_ground_desc = st.checkbox("Show Ground Image", value=True, key="spike_desc_ground")
                 show_bowl_type_desc = st.checkbox("Show Bowl Type", value=True, key="spike_desc_bowl_type")
                 show_bowl_kind_desc = st.checkbox("Show Bowl Pace", value=True, key="spike_desc_bowl_kind")
+                show_bowl_arm_desc = st.checkbox("Show Bowl Arm", value=True, key="spike_desc_bowl_arm")
 
             with col3:
                 st.markdown("## Run Filter (Spike Plot)")
@@ -1195,7 +1268,8 @@ if df is not None:
                     show_overs=show_overs_desc,
                     show_phase=show_phase_desc,
                     show_bowl_type=show_bowl_type_desc,
-                    show_bowl_kind=show_bowl_kind_desc
+                    show_bowl_kind=show_bowl_kind_desc,
+                    show_bowl_arm=show_bowl_arm_desc
                 )
                 with col2:
                     st.pyplot(fig_spike_desc)
@@ -1245,6 +1319,7 @@ if df is not None:
                 show_ground_desc_trans = st.checkbox("Show Ground Image", value=True, key="spike_desc_trans_ground")
                 show_bowl_type_desc_trans = st.checkbox("Show Bowl Type", value=True, key="spike_desc_trans_bowl_type")
                 show_bowl_kind_desc_trans = st.checkbox("Show Bowl Pace", value=True, key="spike_desc_trans_bowl_kind")
+                show_bowl_arm_desc_trans = st.checkbox("Show Bowl Arm", value=True, key="spike_desc_trans_bowl_arm")
 
             with col3:
                 st.markdown("## Run Filter (Spike Plot)")
@@ -1318,7 +1393,8 @@ if df is not None:
                     show_overs=show_overs_desc_trans,
                     show_phase=show_phase_desc_trans,
                     show_bowl_type=show_bowl_type_desc_trans,
-                    show_bowl_kind=show_bowl_kind_desc_trans
+                    show_bowl_kind=show_bowl_kind_desc_trans,
+                    show_bowl_arm=show_bowl_arm_desc_trans
                 )
                 with col2:
                     st.pyplot(fig_spike_desc_trans)
@@ -1597,6 +1673,7 @@ if df is not None:
                 show_prod_shot_wagon_desc = st.checkbox("Show Productive Shot (Wagon Desc)", value=True, key="wagon_desc_prod")
                 show_bowl_type_wagon_desc = st.checkbox("Show Bowl Type (Wagon Desc)", value=True, key="wagon_desc_bowl_type")
                 show_bowl_kind_wagon_desc = st.checkbox("Show Bowl Pace (Wagon Desc)", value=True, key="wagon_desc_bowl_kind")
+                show_bowl_arm_wagon_desc = st.checkbox("Show Bowl Arm (Wagon Desc)", value=True, key="wagon_desc_bowl_arm")
             
             with col3:
                 st.markdown("## Run Filter (Wagon Zone)")
@@ -1668,8 +1745,8 @@ if df is not None:
                     show_overs=show_overs_wagon_desc,
                     show_phase=show_phase_wagon_desc,
                     show_bowl_type=show_bowl_type_wagon_desc,
-                    show_bowl_kind=show_bowl_kind_wagon_desc
-
+                    show_bowl_kind=show_bowl_kind_wagon_desc,
+                    show_bowl_arm=show_bowl_arm_wagon_desc
                 )
                 with col2:
                     st.pyplot(fig_wagon_desc)
@@ -1717,6 +1794,7 @@ if df is not None:
                 show_prod_shot_wagon_desc_trans = st.checkbox("Show Productive Shot (Wagon Desc)", value=True, key="wagon_desc_trans_prod")
                 show_bowl_type_wagon_desc_trans = st.checkbox("Show Bowl Type (Wagon Desc)", value=True, key="wagon_desc_trans_bowl_type")
                 show_bowl_kind_wagon_desc_trans = st.checkbox("Show Bowl Pace (Wagon Desc)", value=True, key="wagon_desc_trans_bowl_kind")
+                show_bowl_arm_wagon_desc_trans = st.checkbox("Show Bowl Arm (Wagon Desc)", value=True, key="wagon_desc_trans_bowl_arm")
             
             with col3:
                 st.markdown("## Run Filter (Wagon Zone)")
@@ -1788,7 +1866,8 @@ if df is not None:
                     show_overs=show_overs_wagon_desc_trans,
                     show_phase=show_phase_wagon_desc_trans,
                     show_bowl_type=show_bowl_type_wagon_desc_trans,
-                    show_bowl_kind=show_bowl_kind_wagon_desc_trans
+                    show_bowl_kind=show_bowl_kind_wagon_desc_trans,
+                    show_bowl_arm=show_bowl_arm_wagon_desc_trans
                 )
                 with col2:
                     st.pyplot(fig_wagon_desc_trans)
@@ -1836,6 +1915,7 @@ if df is not None:
                 show_phase_dismissal = st.checkbox("Show Phase", value=True, key="phase_dismissal")
                 show_bowl_type_dismissal = st.checkbox("Show Bowl Type", value=True, key="bowl_type_dismissal")
                 show_bowl_kind_dismissal = st.checkbox("Show Bowl Pace", value=True, key="bowl_kind_dismissal")
+                show_bowl_arm_dismissal = st.checkbox("Show Bowl Arm", value=True, key="bowl_arm_dismissal")
 
             try:
                 fig_dismissal = dismissal_plot(
@@ -1875,7 +1955,8 @@ if df is not None:
                     show_overs=show_overs_dismissal,
                     show_phase=show_phase_dismissal,
                     show_bowl_type=show_bowl_type_dismissal,
-                    show_bowl_kind=show_bowl_kind_dismissal
+                    show_bowl_kind=show_bowl_kind_dismissal,
+                    show_bowl_arm=show_bowl_arm_dismissal
                 )
             except Exception as e:
                 st.error(f"Error generating dismissal plot: {str(e)}")
@@ -1928,6 +2009,7 @@ if df is not None:
                 show_phase_dismissal_trans = st.checkbox("Show Phase", value=True, key="phase_dismissal_trans")
                 show_bowl_type_dismissal_trans = st.checkbox("Show Bowl Type", value=True, key="bowl_type_dismissal_trans")
                 show_bowl_kind_dismissal_trans = st.checkbox("Show Bowl Pace", value=True, key="bowl_kind_dismissal_trans")
+                show_bowl_arm_dismissal_trans = st.checkbox("Show Bowl Arm", value=True, key="bowl_arm_dismissal_trans")
 
             try:
                 fig_dismissal_trans = dismissal_plot(
@@ -1967,7 +2049,8 @@ if df is not None:
                     show_overs=show_overs_dismissal_trans,
                     show_phase=show_phase_dismissal_trans,
                     show_bowl_type=show_bowl_type_dismissal_trans,
-                    show_bowl_kind=show_bowl_kind_dismissal_trans
+                    show_bowl_kind=show_bowl_kind_dismissal_trans,
+                    show_bowl_arm=show_bowl_arm_dismissal_trans
                 )
             except Exception as e:
                 st.error(f"Error generating dismissal plot (transparent): {str(e)}")
