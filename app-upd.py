@@ -347,9 +347,7 @@ if st.session_state.df is not None:
                     # Plot type selection
                     batch_plot_types = st.sidebar.multiselect(
                         "Select plots to generate:",
-                        ["Spike Plot Plot", "Spike Plot Descriptive", "Wagon Zone Plot", "Wagon Zone Descriptive"],
-                        default=["Spike Plot Descriptive", "Wagon Zone Descriptive"],
-                        key="batch_plot_select"
+                    ["Spike Plot Plot", "Spike Plot Descriptive", "Wagon Zone Plot", "Wagon Zone Descriptive", "Dismissal Plot"],
                     )
                     
                     # Transparent option
@@ -449,7 +447,9 @@ if st.session_state.df is not None:
                                             'show_bowler': True,
                                             'show_ground': True,
                                             'show_overs': True,
-                                            'show_phase': True
+                                            'show_phase': True,
+                                            'show_bowl_type': True,
+                                            'show_bowl_kind': True
                                         }
                                     else:
                                         batch_filters = {
@@ -476,7 +476,9 @@ if st.session_state.df is not None:
                                             'show_bowler': True,
                                             'show_ground': True,
                                             'show_overs': True,
-                                            'show_phase': True                                     
+                                            'show_phase': True,
+                                            'show_bowl_type': True,
+                                            'show_bowl_kind': True                                     
                                         }
                                     
                                     # Generate selected plots
@@ -509,6 +511,14 @@ if st.session_state.df is not None:
                                             fig = wagon_zone_plot_descriptive(df=df, pid=pid, player_name=None, **wagon_filters)
                                             if fig is not None:
                                                 all_batch_figures[f"{player_name}_wagon_zone_desc.png"] = fig
+                                                success_count += 1
+                                        
+                                        if "Dismissal Plot" in batch_plot_types:
+                                            # Dismissal plots have all parameters like spike plots
+                                            dismissal_filters = {k: v for k, v in batch_filters.items()}
+                                            fig = dismissal_plot(df=df, pid=pid, player_name=None, **dismissal_filters)
+                                            if fig is not None:
+                                                all_batch_figures[f"{player_name}_dismissal_plot.png"] = fig
                                                 success_count += 1
                                     
                                     except ZeroDivisionError:
@@ -1110,6 +1120,8 @@ if df is not None:
                 show_overs_desc = st.checkbox("Show Overs", value=True, key="spike_desc_overs")
                 show_phase_desc = st.checkbox("Show Phase", value=True, key="spike_desc_phase")
                 show_ground_desc = st.checkbox("Show Ground Image", value=True, key="spike_desc_ground")
+                show_bowl_type_desc = st.checkbox("Show Bowl Type", value=True, key="spike_desc_bowl_type")
+                show_bowl_kind_desc = st.checkbox("Show Bowl Pace", value=True, key="spike_desc_bowl_kind")
 
             with col3:
                 st.markdown("## Run Filter (Spike Plot)")
@@ -1181,7 +1193,9 @@ if df is not None:
                     show_bowler=show_bowler_desc,
                     show_ground=show_ground_desc,
                     show_overs=show_overs_desc,
-                    show_phase=show_phase_desc
+                    show_phase=show_phase_desc,
+                    show_bowl_type=show_bowl_type_desc,
+                    show_bowl_kind=show_bowl_kind_desc
                 )
                 with col2:
                     st.pyplot(fig_spike_desc)
@@ -1229,6 +1243,8 @@ if df is not None:
                 show_overs_desc_trans = st.checkbox("Show Overs", value=True, key="spike_desc_trans_overs")
                 show_phase_desc_trans = st.checkbox("Show Phase", value=True, key="spike_desc_trans_phase")
                 show_ground_desc_trans = st.checkbox("Show Ground Image", value=True, key="spike_desc_trans_ground")
+                show_bowl_type_desc_trans = st.checkbox("Show Bowl Type", value=True, key="spike_desc_trans_bowl_type")
+                show_bowl_kind_desc_trans = st.checkbox("Show Bowl Pace", value=True, key="spike_desc_trans_bowl_kind")
 
             with col3:
                 st.markdown("## Run Filter (Spike Plot)")
@@ -1300,7 +1316,9 @@ if df is not None:
                     show_bowler=show_bowler_desc_trans,
                     show_ground=show_ground_desc_trans,
                     show_overs=show_overs_desc_trans,
-                    show_phase=show_phase_desc_trans
+                    show_phase=show_phase_desc_trans,
+                    show_bowl_type=show_bowl_type_desc_trans,
+                    show_bowl_kind=show_bowl_kind_desc_trans
                 )
                 with col2:
                     st.pyplot(fig_spike_desc_trans)
@@ -1577,6 +1595,8 @@ if df is not None:
                 show_overs_wagon_desc = st.checkbox("Show Overs (Wagon Desc)", value=True, key="wagon_desc_overs")
                 show_phase_wagon_desc = st.checkbox("Show Phase (Wagon Desc)", value=True, key="wagon_desc_phase")
                 show_prod_shot_wagon_desc = st.checkbox("Show Productive Shot (Wagon Desc)", value=True, key="wagon_desc_prod")
+                show_bowl_type_wagon_desc = st.checkbox("Show Bowl Type (Wagon Desc)", value=True, key="wagon_desc_bowl_type")
+                show_bowl_kind_wagon_desc = st.checkbox("Show Bowl Pace (Wagon Desc)", value=True, key="wagon_desc_bowl_kind")
             
             with col3:
                 st.markdown("## Run Filter (Wagon Zone)")
@@ -1646,7 +1666,9 @@ if df is not None:
                     show_prod_shot=show_prod_shot_wagon_desc,
                     show_bowler=show_bowler_wagon_desc,
                     show_overs=show_overs_wagon_desc,
-                    show_phase=show_phase_wagon_desc
+                    show_phase=show_phase_wagon_desc,
+                    show_bowl_type=show_bowl_type_wagon_desc,
+                    show_bowl_kind=show_bowl_kind_wagon_desc
 
                 )
                 with col2:
@@ -1693,6 +1715,8 @@ if df is not None:
                 show_overs_wagon_desc_trans = st.checkbox("Show Overs (Wagon Desc)", value=True, key="wagon_desc_trans_overs")
                 show_phase_wagon_desc_trans = st.checkbox("Show Phase (Wagon Desc)", value=True, key="wagon_desc_trans_phase")
                 show_prod_shot_wagon_desc_trans = st.checkbox("Show Productive Shot (Wagon Desc)", value=True, key="wagon_desc_trans_prod")
+                show_bowl_type_wagon_desc_trans = st.checkbox("Show Bowl Type (Wagon Desc)", value=True, key="wagon_desc_trans_bowl_type")
+                show_bowl_kind_wagon_desc_trans = st.checkbox("Show Bowl Pace (Wagon Desc)", value=True, key="wagon_desc_trans_bowl_kind")
             
             with col3:
                 st.markdown("## Run Filter (Wagon Zone)")
@@ -1762,7 +1786,9 @@ if df is not None:
                     show_prod_shot=show_prod_shot_wagon_desc_trans,
                     show_bowler=show_bowler_wagon_desc_trans,
                     show_overs=show_overs_wagon_desc_trans,
-                    show_phase=show_phase_wagon_desc_trans
+                    show_phase=show_phase_wagon_desc_trans,
+                    show_bowl_type=show_bowl_type_wagon_desc_trans,
+                    show_bowl_kind=show_bowl_kind_wagon_desc_trans
                 )
                 with col2:
                     st.pyplot(fig_wagon_desc_trans)
@@ -1808,6 +1834,8 @@ if df is not None:
                 show_prod_shot_dismissal = st.checkbox("Show Most Loose Shot", value=True, key="prod_shot_dismissal")
                 show_overs_dismissal = st.checkbox("Show Overs", value=True, key="overs_dismissal")
                 show_phase_dismissal = st.checkbox("Show Phase", value=True, key="phase_dismissal")
+                show_bowl_type_dismissal = st.checkbox("Show Bowl Type", value=True, key="bowl_type_dismissal")
+                show_bowl_kind_dismissal = st.checkbox("Show Bowl Pace", value=True, key="bowl_kind_dismissal")
 
             try:
                 fig_dismissal = dismissal_plot(
@@ -1845,7 +1873,9 @@ if df is not None:
                     show_bowler=show_bowler_dismissal,
                     show_ground=show_ground_dismissal,
                     show_overs=show_overs_dismissal,
-                    show_phase=show_phase_dismissal
+                    show_phase=show_phase_dismissal,
+                    show_bowl_type=show_bowl_type_dismissal,
+                    show_bowl_kind=show_bowl_kind_dismissal
                 )
             except Exception as e:
                 st.error(f"Error generating dismissal plot: {str(e)}")
@@ -1896,6 +1926,8 @@ if df is not None:
                 show_prod_shot_dismissal_trans = st.checkbox("Show Most Loose Shot", value=True, key="prod_shot_dismissal_trans")
                 show_overs_dismissal_trans = st.checkbox("Show Overs", value=True, key="overs_dismissal_trans")
                 show_phase_dismissal_trans = st.checkbox("Show Phase", value=True, key="phase_dismissal_trans")
+                show_bowl_type_dismissal_trans = st.checkbox("Show Bowl Type", value=True, key="bowl_type_dismissal_trans")
+                show_bowl_kind_dismissal_trans = st.checkbox("Show Bowl Pace", value=True, key="bowl_kind_dismissal_trans")
 
             try:
                 fig_dismissal_trans = dismissal_plot(
@@ -1933,7 +1965,9 @@ if df is not None:
                     show_bowler=show_bowler_dismissal_trans,
                     show_ground=show_ground_dismissal_trans,
                     show_overs=show_overs_dismissal_trans,
-                    show_phase=show_phase_dismissal_trans
+                    show_phase=show_phase_dismissal_trans,
+                    show_bowl_type=show_bowl_type_dismissal_trans,
+                    show_bowl_kind=show_bowl_kind_dismissal_trans
                 )
             except Exception as e:
                 st.error(f"Error generating dismissal plot (transparent): {str(e)}")
@@ -2015,4 +2049,3 @@ if df is not None:
 
 else:
     st.info("Please select a dataset source to begin.")
-
