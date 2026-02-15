@@ -102,14 +102,15 @@ def spike_graph_plot(
     if bat_hand is not None:
         local_df = local_df[local_df['bat_hand'] == bat_hand]
 
-    if bowl_type is not None:
-        local_df = local_df[local_df['bowl_type'] == bowl_type]
+    # updated change of multiselect
+    if bowl_type is not None and len(bowl_type) > 0:
+        local_df = local_df[local_df['bowl_type'].isin(bowl_type)]
 
-    if bowl_kind is not None:
-        local_df = local_df[local_df['bowl_kind'] == bowl_kind]
-        
-    if bowl_arm is not None:
-        local_df = local_df[local_df['bowl_arm'] == bowl_arm]
+    if bowl_kind is not None and len(bowl_kind) > 0:
+        local_df = local_df[local_df['bowl_kind'].isin(bowl_kind)]
+
+    if bowl_arm is not None and len(bowl_arm) > 0:
+        local_df = local_df[local_df['bowl_arm'].isin(bowl_arm)]
 
     # Date range filter
     if date_from is not None:

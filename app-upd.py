@@ -1029,7 +1029,7 @@ if df is not None:
                 with col2:
                     st.pyplot(fig_spike)
             
-            with col1:
+            with col3:
                 if fig_spike:
                     buf = BytesIO()
                     fig_spike.savefig(buf, format="png", transparent=False, dpi=300, bbox_inches='tight')
@@ -1149,7 +1149,7 @@ if df is not None:
                 with col2:
                     st.pyplot(fig_spike_trans)
             
-            with col1:
+            with col3:
                 if fig_spike_trans:
                     buf = BytesIO()
                     fig_spike_trans.savefig(buf, format="png", transparent=True, dpi=300, bbox_inches='tight')
@@ -1274,7 +1274,7 @@ if df is not None:
                 with col2:
                     st.pyplot(fig_spike_desc)
             
-            with col1:
+            with col3:
                 if fig_spike_desc:
                     buf = BytesIO()
                     fig_spike_desc.savefig(buf, format="png", transparent=False, dpi=300, bbox_inches='tight')
@@ -1399,7 +1399,7 @@ if df is not None:
                 with col2:
                     st.pyplot(fig_spike_desc_trans)
             
-            with col1:
+            with col3:
                 if fig_spike_desc_trans:
                     buf = BytesIO()
                     fig_spike_desc_trans.savefig(buf, format="png", transparent=True, dpi=300, bbox_inches='tight')
@@ -1514,7 +1514,7 @@ if df is not None:
                     )
                     st.pyplot(fig_wagon)
             
-            with col1:
+            with col3:
                 if fig_wagon:
                     buf = BytesIO()
                     fig_wagon.savefig(buf, format="png", transparent=False, dpi=300, bbox_inches='tight')
@@ -1630,7 +1630,7 @@ if df is not None:
                     )
                     st.pyplot(fig_wagon_trans)
             
-            with col1:
+            with col3:
                 if fig_wagon_trans:
                     buf = BytesIO()
                     fig_wagon_trans.savefig(buf, format="png", transparent=True, dpi=300, bbox_inches='tight')
@@ -1751,7 +1751,7 @@ if df is not None:
                 with col2:
                     st.pyplot(fig_wagon_desc)
             
-            with col1:
+            with col3:
                 if fig_wagon_desc:
                     buf = BytesIO()
                     fig_wagon_desc.savefig(buf, format="png", transparent=False, dpi=300, bbox_inches='tight')
@@ -1872,7 +1872,7 @@ if df is not None:
                 with col2:
                     st.pyplot(fig_wagon_desc_trans)
             
-            with col1:
+            with col3:
                 if fig_wagon_desc_trans:
                     buf = BytesIO()
                     fig_wagon_desc_trans.savefig(buf, format="png", transparent=True, dpi=300, bbox_inches='tight')
@@ -1966,7 +1966,7 @@ if df is not None:
                 if fig_dismissal:
                     st.pyplot(fig_dismissal)
             
-            with col1:
+            with col3:
                 if fig_dismissal:
                     buf = BytesIO()
                     fig_dismissal.savefig(buf, format='png', dpi=300, bbox_inches='tight')
@@ -2060,7 +2060,7 @@ if df is not None:
                 if fig_dismissal_trans:
                     st.pyplot(fig_dismissal_trans)
             
-            with col1:
+            with col3:
                 if fig_dismissal_trans:
                     buf = BytesIO()
                     fig_dismissal_trans.savefig(buf, format='png', transparent=True, dpi=300, bbox_inches='tight')
