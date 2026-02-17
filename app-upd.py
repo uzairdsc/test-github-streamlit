@@ -346,10 +346,10 @@ if st.session_state.df is not None:
     # squad_file = "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx"
 
     try:
-        squad_file = "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx"
+        squad_file = "data/2026-WT20-Squads.xlsx"
     except FileNotFoundError:
         try:
-            squad_file = "data/2026-WT20-Squads.xlsx"
+            squad_file = "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx"
         except FileNotFoundError:
             raise FileNotFoundError("Squad file not found in either location.")
 
@@ -2131,4 +2131,5 @@ if df is not None:
             st.info(f"Ready to download {len(all_figures)} plot(s)")
 
 else:
+
     st.info("Please select a dataset source to begin.")
