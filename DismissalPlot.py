@@ -16,7 +16,7 @@ def dismissal_plot(
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
     show_title=True, show_legend=True, show_summary=True, show_shots_breakdown=True,
     show_fours_sixes=True, show_control=True, show_prod_shot=True, 
-    show_bowl_type=True, show_bowl_kind=True, show_bowl_arm=True,
+    show_bowl_type=True, show_bowl_kind=True, show_bowl_arm=True, show_venue=True,
     runs_count=True, show_bowler=True, show_ground=True, show_overs=True, show_phase=True
 ):
     score_colors = {
@@ -56,11 +56,17 @@ def dismissal_plot(
     if inns is not None:
         local_df = local_df[local_df['inns'] == inns]
         
-    if team_bat is not None and team_bat != "All":
-        local_df = local_df[local_df['team_bat'] == team_bat]
+    # if team_bat is not None and team_bat != "All":
+    #     local_df = local_df[local_df['team_bat'] == team_bat]
 
-    if team_bowl is not None and team_bowl != "All":
-        local_df = local_df[local_df['team_bowl'] == team_bowl]
+    # if team_bowl is not None and team_bowl != "All":
+    #     local_df = local_df[local_df['team_bowl'] == team_bowl]
+
+    if team_bat is not None and len(team_bat) > 0:
+        local_df = local_df[local_df['team_bat'].isin(team_bat)]
+
+    if team_bowl is not None and len(team_bowl) > 0:
+        local_df = local_df[local_df['team_bowl'].isin(team_bowl)]
 
     # ADD THIS:
     if competition:
@@ -87,8 +93,11 @@ def dismissal_plot(
         local_df = local_df[local_df['date'] <= pd.to_datetime(date_to)]
 
     #ground filter
-    if ground is not None:
-        local_df = local_df[local_df['ground'] == ground]
+    # if ground is not None:
+    #     local_df = local_df[local_df['ground'] == ground]
+
+    if ground is not None and len(ground) > 0:
+        local_df = local_df[local_df['ground'].isin(ground)]
 
 
     if bat_hand is not None:
@@ -174,31 +183,31 @@ def dismissal_plot(
     #         team_bowl = "ALL TEAMS"
 
     # Determine team names - Updated logic
-    # Determine team names - Updated logic
-    if not local_df.empty:
-        team_bats = local_df['team_bat'].unique() 
-        if len(team_bats) == 1:
-            team_bat = team_bats[0]
-            # Filter by the same match to get correct opponent
-            if mat_num is not None and mat_num != "All Matches":  # ✅ ADD THIS CHECK
-                match_df = df[df['p_match'] == mat_num]
-            else:
-                match_df = local_df
-            
-            # Get opponent from the same match
-            team_bowls_in_match = match_df['team_bowl'].unique()
-            opponents = [t for t in team_bowls_in_match if t != team_bat]  # ✅ STORE AS LIST
-            
-            if len(opponents) == 1:  # ✅ CHECK LIST LENGTH
-                team_bowl = opponents[0]
-            elif len(opponents) > 1:  # ✅ MULTIPLE OPPONENTS
-                team_bowl = "All Teams"
-            else:
-                team_bowl = "Opponents"
-        else:
-            team_bowl = "All Teams"
-    else:
-        team_bowl = "All Teams"
+    # (Commented out to preserve original team_bowl selection for title display)
+    # if not local_df.empty:
+    #     team_bats = local_df['team_bat'].unique() 
+    #     if len(team_bats) == 1:
+    #         team_bat = team_bats[0]
+    #         # Filter by the same match to get correct opponent
+    #         if mat_num is not None and mat_num != "All Matches":  # ✅ ADD THIS CHECK
+    #             match_df = df[df['p_match'] == mat_num]
+    #         else:
+    #             match_df = local_df
+    #         
+    #         # Get opponent from the same match
+    #         team_bowls_in_match = match_df['team_bowl'].unique()
+    #         opponents = [t for t in team_bowls_in_match if t != team_bat]  # ✅ STORE AS LIST
+    #         
+    #         if len(opponents) == 1:  # ✅ CHECK LIST LENGTH
+    #             team_bowl = opponents[0]
+    #         elif len(opponents) > 1:  # ✅ MULTIPLE OPPONENTS
+    #             team_bowl = "All Teams"
+    #         else:
+    #             team_bowl = "Opponents"
+    #     else:
+    #         team_bowl = "All Teams"
+    # else:
+    #     team_bowl = "All Teams"
 
 
     
@@ -519,7 +528,7 @@ def dismissal_plot(
     # ax.set_xlim(-20, 470)
     # ax.set_ylim(-30, 370)
     ax.set_xlim(-20, 380)
-    ax.set_ylim(-30, 620)
+    ax.set_ylim(-30, 640)
     ax.set_xticks([]), ax.set_yticks([])
     ax.set_xticklabels([]), ax.set_yticklabels([])
     ax.set_aspect('equal', adjustable='box')
@@ -541,36 +550,40 @@ def dismissal_plot(
         # ax.set_title(f"{player_name} - {team_bats} vs {team_bowl} | Test: {test_num}, Inns: {inns}".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
     # updated filter with teams names in plot
     if show_title:
-    # Determine title display
+        # Determine title display
         if player_name and player_name != "All Players":
             title_name = player_name
-            title_opponent = team_bowl
         else:
             # For team view, show both teams
             if not local_df.empty:
                 batting_teams_display = local_df['team_bat'].unique()
                 if len(batting_teams_display) == 1:
                     title_name = batting_teams_display[0]
-                    title_opponent = team_bowl
                 else:
                     title_name = "All Players"
-                    title_opponent = team_bowl
             else:
                 title_name = "All Players"
+
+        # --- Enhanced team_bowl display logic ---
+        # If team_bowl is a list, join all selected teams
+        title_fontsize = 12
+        if isinstance(team_bowl, list):
+            if len(team_bowl) == 0:
                 title_opponent = "All Teams"
-        
-        # ax.set_title(f"{title_name} vs {title_opponent} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper(), 
-        #             fontsize=12, fontweight='bold', fontfamily='DejaVu Sans')
-        # title_text = f"{title_name} vs {title_opponent} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper()
+            elif len(team_bowl) == 1:
+                title_opponent = team_bowl[0]
+            else:
+                title_opponent = ", ".join(team_bowl)
+                if len(team_bowl) > 2:
+                    title_fontsize = 9  # Reduce font size for many teams
+        else:
+            title_opponent = team_bowl if team_bowl is not None else "All Teams"
 
         title_parts = []
-
         if 'title' in title_components:
             title_parts.append(f"{title_name} vs {title_opponent}")
-        
         if 'filters' in title_components:
             title_parts.append(f"{competition} - Mat '{mat_num}', Inns: '{inns}'")
-        
         title_text = " | ".join(title_parts).upper()
 
 
@@ -681,21 +694,16 @@ def dismissal_plot(
             #         fontsize=11, ha='center', color='blue', fontweight='bold')
 
     if show_title:
-        # ax.text(180,420,title_text, fontsize=12, fontweight='bold',  ha='center',
-        #              fontfamily='DejaVu Sans')
-        
         # Adjust position based on title length
         if len(title_components) == 1:
-            # Shorter title - keep centered
-            title_x = 180
-            title_y = 420  # Slightly lower for single line
-            ax.set_xlim(-60, 420)
-        else:
-            # Full title - original position
             title_x = 180
             title_y = 420
-        
-        ax.text(title_x, title_y, title_text, fontsize=12, ha='center', 
+            ax.set_xlim(-60, 420)
+        else:
+            title_x = 180
+            title_y = 420
+        # Use dynamic font size
+        ax.text(title_x, title_y, title_text, fontsize=title_fontsize, ha='center', 
                 fontweight='bold', fontfamily='DejaVu Sans')
 
     if show_control:
@@ -792,6 +800,18 @@ def dismissal_plot(
             ax.text(180, 590, f"Bowl Type: {bowl_type_text}", 
             # ax.text(70, 590, f"Bowl Type: {bowl_type_text}", 
                     fontsize=10, ha='center', color='darkviolet', fontweight='bold')
+
+    if show_venue:
+        if ground is None or len(ground) == 0:
+            ground = "All Venues"
+        elif len(ground) == 1:
+            ground = ground[0]
+        else:
+            ground = ", ".join(ground)
+
+        ax.text(180, 630, f"Venue: {ground}", 
+                fontsize=10, ha='center', color='blue', fontweight='bold')
+
 
     if show_bowl_kind:
         # Format bowl_kind text

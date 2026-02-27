@@ -13,7 +13,7 @@ def spike_graph_plot(
     run_values=None, bowler_name=None, competition=None, date_from=None, date_to=None,    
     transparent=True, over_values=None, phase=None, bowler_id=None, ground=None, mcode=None,
     title_components=['title', 'filters'], shots_breakdown_options=['0s', '1s', '2s', '3s', '4s', '6s'],  # NEW: Which runs to show
-    bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
+    bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None, show_venue=True,
     show_title=True, show_legend=True, show_summary=True, show_shots_breakdown=True,
     show_fours_sixes=True, show_control=True, show_prod_shot=True,  show_bowl_type=True, show_bowl_kind=True, show_bowl_arm=True,
     runs_count=True, show_bowler=True, show_ground=True, show_overs=True, show_phase=True
@@ -71,11 +71,17 @@ def spike_graph_plot(
     if inns is not None:
         local_df = local_df[local_df['inns'] == inns]
         
-    if team_bat is not None and team_bat != "All":
-        local_df = local_df[local_df['team_bat'] == team_bat]
+    # if team_bat is not None and team_bat != "All":
+    #     local_df = local_df[local_df['team_bat'] == team_bat]
 
-    if team_bowl is not None and team_bowl != "All":
-        local_df = local_df[local_df['team_bowl'] == team_bowl]
+    # if team_bowl is not None and team_bowl != "All":
+    #     local_df = local_df[local_df['team_bowl'] == team_bowl]
+
+    if team_bat is not None and len(team_bat) > 0:
+        local_df = local_df[local_df['team_bat'].isin(team_bat)]
+
+    if team_bowl is not None and len(team_bowl) > 0:
+        local_df = local_df[local_df['team_bowl'].isin(team_bowl)]
 
     # ADD THIS:
     if competition:
@@ -132,8 +138,11 @@ def spike_graph_plot(
         innings_runs = innings_valid_balls['batruns'].sum()
 
     #ground filter
-    if ground is not None:
-        local_df = local_df[local_df['ground'] == ground]
+    # if ground is not None:
+    #     local_df = local_df[local_df['ground'] == ground]
+
+    if ground is not None and len(ground) > 0:
+        local_df = local_df[local_df['ground'].isin(ground)]
 
 
     innings_balls = innings_valid_balls.shape[0]
@@ -184,32 +193,31 @@ def spike_graph_plot(
     #     else:
     #         team_bowl = "ALL TEAMS"
 
-    # Determine team names - Updated logic
-    # Determine team names - Updated logic
-    if not local_df.empty:
-        team_bats = local_df['team_bat'].unique() 
-        if len(team_bats) == 1:
-            team_bat = team_bats[0]
-            # Filter by the same match to get correct opponent
-            if mat_num is not None and mat_num != "All Matches":  # ✅ ADD THIS CHECK
-                match_df = df[df['p_match'] == mat_num]
-            else:
-                match_df = local_df
+    # # Determine team names - Updated logic
+    # if not local_df.empty:
+    #     team_bats = local_df['team_bat'].unique() 
+    #     if len(team_bats) == 1:
+    #         team_bat = team_bats[0]
+    #         # Filter by the same match to get correct opponent
+    #         if mat_num is not None and mat_num != "All Matches":  # ✅ ADD THIS CHECK
+    #             match_df = df[df['p_match'] == mat_num]
+    #         else:
+    #             match_df = local_df
             
-            # Get opponent from the same match
-            team_bowls_in_match = match_df['team_bowl'].unique()
-            opponents = [t for t in team_bowls_in_match if t != team_bat]  # ✅ STORE AS LIST
+    #         # Get opponent from the same match
+    #         team_bowls_in_match = match_df['team_bowl'].unique()
+    #         opponents = [t for t in team_bowls_in_match if t != team_bat]  # ✅ STORE AS LIST
             
-            if len(opponents) == 1:  # ✅ CHECK LIST LENGTH
-                team_bowl = opponents[0]
-            elif len(opponents) > 1:  # ✅ MULTIPLE OPPONENTS
-                team_bowl = "All Teams"
-            else:
-                team_bowl = "Opponents"
-        else:
-            team_bowl = "All Teams"
-    else:
-        team_bowl = "All Teams"
+    #         if len(opponents) == 1:  # ✅ CHECK LIST LENGTH
+    #             team_bowl = opponents[0]
+    #         elif len(opponents) > 1:  # ✅ MULTIPLE OPPONENTS
+    #             team_bowl = "All Teams"
+    #         else:
+    #             team_bowl = "Opponents"
+    #     else:
+    #         team_bowl = "All Teams"
+    # else:
+    #     team_bowl = "All Teams"
 
 
     
@@ -516,8 +524,41 @@ def spike_graph_plot(
     #     ax.set_title(f"{player_name} vs {team_bowl} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper(), fontsize=12, fontweight='bold',fontfamily='DejaVu Sans')
         # ax.set_title(f"{player_name} - {team_bats} vs {team_bowl} | Test: {test_num}, Inns: {inns}".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
     # updated filter with teams names in plot
+    # if show_title:
+    # # Determine title display
+    #     if player_name and player_name != "All Players":
+    #         title_name = player_name
+    #         title_opponent = team_bowl
+    #     else:
+    #         # For team view, show both teams
+    #         if not local_df.empty:
+    #             batting_teams_display = local_df['team_bat'].unique()
+    #             if len(batting_teams_display) == 1:
+    #                 title_name = batting_teams_display[0]
+    #                 title_opponent = team_bowl
+    #             else:
+    #                 title_name = "All Players"
+    #                 title_opponent = team_bowl
+    #         else:
+    #             title_name = "All Players"
+    #             title_opponent = "All Teams"
+        
+    #     # ax.set_title(f"{title_name} vs {title_opponent} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper(), 
+    #     #             fontsize=12, fontweight='bold', fontfamily='DejaVu Sans')
+
+    #     title_parts=[]
+
+    #     if "title" in title_components:
+    #         title_parts.append(f"{title_name} vs {title_opponent}")
+
+    #     if "filters" in title_components:
+    #         title_parts.append(f"{competition} - Mat \'{mat_num}\', Inns: \'{inns}\'")
+
+    #     title_text = " | ".join(title_parts).upper()
+
+    #updated after multiple teams in display
     if show_title:
-    # Determine title display
+        # Determine title display
         if player_name and player_name != "All Players":
             title_name = player_name
             title_opponent = team_bowl
@@ -534,18 +575,28 @@ def spike_graph_plot(
             else:
                 title_name = "All Players"
                 title_opponent = "All Teams"
-        
-        # ax.set_title(f"{title_name} vs {title_opponent} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper(), 
-        #             fontsize=12, fontweight='bold', fontfamily='DejaVu Sans')
 
-        title_parts=[]
+        # ✅ ADD THIS: Enhanced team_bowl display logic (handles list vs string)
+        title_fontsize = 12
+        if isinstance(title_opponent, list):
+            if len(title_opponent) == 0:
+                title_opponent = "All Teams"
+            elif len(title_opponent) == 1:
+                title_opponent = title_opponent[0]
+            else:
+                title_opponent = ", ".join(title_opponent)
+                if len(title_opponent.split(", ")) > 2:
+                    title_fontsize = 9  # Reduce font size for many teams
+        else:
+            title_opponent = title_opponent if title_opponent is not None else "All Teams"
 
-        if "title" in title_components:
+        title_parts = []
+        if 'title' in title_components:
             title_parts.append(f"{title_name} vs {title_opponent}")
-
-        if "filters" in title_components:
-            title_parts.append(f"{competition} - Mat \'{mat_num}\', Inns: \'{inns}\'")
-
+        
+        if 'filters' in title_components:
+            title_parts.append(f"{competition} - Mat '{mat_num}', Inns: '{inns}'")
+        
         title_text = " | ".join(title_parts).upper()
 
     if show_title:
@@ -708,7 +759,7 @@ def spike_graph_plot_descriptive(
     transparent=False, over_values=None, phase=None, bowler_id=None, ground=None, mcode=None,
     title_components=["title", "filters"], shots_breakdown_options=['0s', '1s', '2s', '3s', '4s', '6s'],
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
-    show_title=True, show_legend=True, show_summary=True, show_shots_breakdown=True,
+    show_title=True, show_legend=True, show_summary=True, show_shots_breakdown=True, show_venue=True,
     show_fours_sixes=True, show_control=True, show_prod_shot=True, show_bowl_type=True, show_bowl_kind=True,
     runs_count=True, show_bowler=True, show_ground=True, show_overs=True, show_phase=True, show_bowl_arm=True,
 ):
@@ -766,11 +817,17 @@ def spike_graph_plot_descriptive(
     if inns is not None:
         local_df = local_df[local_df['inns'] == inns]
         
-    if team_bat is not None and team_bat != "All":
-        local_df = local_df[local_df['team_bat'] == team_bat]
+    # if team_bat is not None and team_bat != "All":
+    #     local_df = local_df[local_df['team_bat'] == team_bat]
 
-    if team_bowl is not None and team_bowl != "All":
-        local_df = local_df[local_df['team_bowl'] == team_bowl]
+    # if team_bowl is not None and team_bowl != "All":
+    #     local_df = local_df[local_df['team_bowl'] == team_bowl]
+
+    if team_bat is not None and len(team_bat) > 0:
+        local_df = local_df[local_df['team_bat'].isin(team_bat)]
+
+    if team_bowl is not None and len(team_bowl) > 0:
+        local_df = local_df[local_df['team_bowl'].isin(team_bowl)]
 
     # ADD THIS:
     if competition:
@@ -797,8 +854,11 @@ def spike_graph_plot_descriptive(
         local_df = local_df[local_df['date'] <= pd.to_datetime(date_to)]
 
     #ground filter
-    if ground is not None:
-        local_df = local_df[local_df['ground'] == ground]
+    # if ground is not None:
+    #     local_df = local_df[local_df['ground'] == ground]
+
+    if ground is not None and len(ground) > 0:
+        local_df = local_df[local_df['ground'].isin(ground)]
 
 
     if bat_hand is not None:
@@ -887,32 +947,31 @@ def spike_graph_plot_descriptive(
     #     else:
     #         team_bowl = "ALL TEAMS"
 
-    # Determine team names - Updated logic
-    # Determine team names - Updated logic
-    if not local_df.empty:
-        team_bats = local_df['team_bat'].unique() 
-        if len(team_bats) == 1:
-            team_bat = team_bats[0]
-            # Filter by the same match to get correct opponent
-            if mat_num is not None and mat_num != "All Matches":  # ✅ ADD THIS CHECK
-                match_df = df[df['p_match'] == mat_num]
-            else:
-                match_df = local_df
+    # # Determine team names - Updated logic
+    # if not local_df.empty:
+    #     team_bats = local_df['team_bat'].unique() 
+    #     if len(team_bats) == 1:
+    #         team_bat = team_bats[0]
+    #         # Filter by the same match to get correct opponent
+    #         if mat_num is not None and mat_num != "All Matches":  # ✅ ADD THIS CHECK
+    #             match_df = df[df['p_match'] == mat_num]
+    #         else:
+    #             match_df = local_df
             
-            # Get opponent from the same match
-            team_bowls_in_match = match_df['team_bowl'].unique()
-            opponents = [t for t in team_bowls_in_match if t != team_bat]  # ✅ STORE AS LIST
+    #         # Get opponent from the same match
+    #         team_bowls_in_match = match_df['team_bowl'].unique()
+    #         opponents = [t for t in team_bowls_in_match if t != team_bat]  # ✅ STORE AS LIST
             
-            if len(opponents) == 1:  # ✅ CHECK LIST LENGTH
-                team_bowl = opponents[0]
-            elif len(opponents) > 1:  # ✅ MULTIPLE OPPONENTS
-                team_bowl = "All Teams"
-            else:
-                team_bowl = "Opponents"
-        else:
-            team_bowl = "All Teams"
-    else:
-        team_bowl = "All Teams"
+    #         if len(opponents) == 1:  # ✅ CHECK LIST LENGTH
+    #             team_bowl = opponents[0]
+    #         elif len(opponents) > 1:  # ✅ MULTIPLE OPPONENTS
+    #             team_bowl = "All Teams"
+    #         else:
+    #             team_bowl = "Opponents"
+    #     else:
+    #         team_bowl = "All Teams"
+    # else:
+    #     team_bowl = "All Teams"
 
 
     
@@ -1198,7 +1257,7 @@ def spike_graph_plot_descriptive(
     # ax.set_xlim(-20, 470)
     # ax.set_ylim(-30, 370)
     ax.set_xlim(-20, 380)
-    ax.set_ylim(-30, 620)
+    ax.set_ylim(-30, 650)
     ax.set_xticks([]), ax.set_yticks([])
     ax.set_xticklabels([]), ax.set_yticklabels([])
     ax.set_aspect('equal', adjustable='box')
@@ -1218,9 +1277,45 @@ def spike_graph_plot_descriptive(
     # if show_title:
     #     ax.set_title(f"{player_name} vs {team_bowl} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper(), fontsize=12, fontweight='bold',fontfamily='DejaVu Sans')
         # ax.set_title(f"{player_name} - {team_bats} vs {team_bowl} | Test: {test_num}, Inns: {inns}".upper(), fontsize=12, fontweight='bold',fontfamily='Segoe UI')
-    # updated filter with teams names in plot
+
+
+
+    # # updated filter with teams names in plot
+    # if show_title:
+    # # Determine title display
+    #     if player_name and player_name != "All Players":
+    #         title_name = player_name
+    #         title_opponent = team_bowl
+    #     else:
+    #         # For team view, show both teams
+    #         if not local_df.empty:
+    #             batting_teams_display = local_df['team_bat'].unique()
+    #             if len(batting_teams_display) == 1:
+    #                 title_name = batting_teams_display[0]
+    #                 title_opponent = team_bowl
+    #             else:
+    #                 title_name = "All Players"
+    #                 title_opponent = team_bowl
+    #         else:
+    #             title_name = "All Players"
+    #             title_opponent = "All Teams"
+        
+    #     # ax.set_title(f"{title_name} vs {title_opponent} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper(), 
+    #     #             fontsize=12, fontweight='bold', fontfamily='DejaVu Sans')
+    #     # title_text = f"{title_name} vs {title_opponent} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper()
+
+    #     title_parts = []
+
+    #     if 'title' in title_components:
+    #         title_parts.append(f"{title_name} vs {title_opponent}")
+        
+    #     if 'filters' in title_components:
+    #         title_parts.append(f"{competition} - Mat '{mat_num}', Inns: '{inns}'")
+        
+    #     title_text = " | ".join(title_parts).upper()
+
     if show_title:
-    # Determine title display
+        # Determine title display
         if player_name and player_name != "All Players":
             title_name = player_name
             title_opponent = team_bowl
@@ -1237,13 +1332,22 @@ def spike_graph_plot_descriptive(
             else:
                 title_name = "All Players"
                 title_opponent = "All Teams"
-        
-        # ax.set_title(f"{title_name} vs {title_opponent} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper(), 
-        #             fontsize=12, fontweight='bold', fontfamily='DejaVu Sans')
-        # title_text = f"{title_name} vs {title_opponent} | {competition} - Mat \'{mat_num}\', Inns: \'{inns}\'".upper()
+
+        # ✅ ADD THIS: Enhanced team_bowl display logic (handles list vs string)
+        title_fontsize = 12
+        if isinstance(title_opponent, list):
+            if len(title_opponent) == 0:
+                title_opponent = "All Teams"
+            elif len(title_opponent) == 1:
+                title_opponent = title_opponent[0]
+            else:
+                title_opponent = ", ".join(title_opponent)
+                if len(title_opponent.split(", ")) > 2:
+                    title_fontsize = 9  # Reduce font size for many teams
+        else:
+            title_opponent = title_opponent if title_opponent is not None else "All Teams"
 
         title_parts = []
-
         if 'title' in title_components:
             title_parts.append(f"{title_name} vs {title_opponent}")
         
@@ -1349,7 +1453,7 @@ def spike_graph_plot_descriptive(
                 ax.text(180, 499, f"vs {bowler_name}",
                         fontsize=11, ha='center', color='blue', fontweight='bold')
             else:
-                ax.text(310, 499, f" | vs {bowler_name}",
+                ax.text(320, 499, f" | vs {bowler_name}",
                         fontsize=11, ha='center', color='blue', fontweight='bold')
             # ax.text(310, 499, f" | vs {bowler_name}",
             #         fontsize=11, ha='center', color='blue', fontweight='bold')
@@ -1460,6 +1564,18 @@ def spike_graph_plot_descriptive(
         else:
             ax.text(180, 590, f"Bowl Type: {bowl_type_text}", 
                     fontsize=10, ha='center', color='darkviolet', fontweight='bold')
+
+    if show_venue:
+        if ground is None or len(ground) == 0:
+            ground = "All Venues"
+        elif len(ground) == 1:
+            ground = ground[0]
+        else:
+            ground = ", ".join(ground)
+
+        ax.text(180, 630, f"Venue: {ground}", 
+                fontsize=10, ha='center', color='blue', fontweight='bold')
+        
 
     if show_bowl_kind:
         # Format bowl_kind text

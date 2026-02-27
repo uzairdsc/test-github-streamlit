@@ -12,7 +12,7 @@ def wagon_zone_plot(
     date_from=None, date_to=None, over_values=None, phase=None, bowler_id=None, mcode=None,
     title_components=['title', 'filters'], shots_breakdown_options=['0s', '1s', '2s', '3s', '4s', '6s'],  # NEW: Which runs to show
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
-    show_bowl_type=True, show_bowl_kind=True, show_bowl_arm=True,
+    show_bowl_type=True, show_bowl_kind=True, show_bowl_arm=True, show_venue=True,
     show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, show_shots_breakdown=True,
     show_prod_shot=True,runs_count=True, show_bowler=True, show_overs=True, show_phase=True
 ):
@@ -55,11 +55,18 @@ def wagon_zone_plot(
     if run_values is not None:
         local_df = local_df[local_df['batruns'].isin(run_values)] #batruns
 
-    if team_bat is not None and team_bat != "All":
-        local_df = local_df[local_df['team_bat'] == team_bat]
+    # if team_bat is not None and team_bat != "All":
+    #     local_df = local_df[local_df['team_bat'] == team_bat]
 
-    if team_bowl is not None and team_bowl != "All":
-        local_df = local_df[local_df['team_bowl'] == team_bowl]
+    # if team_bowl is not None and team_bowl != "All":
+    #     local_df = local_df[local_df['team_bowl'] == team_bowl]
+
+    if team_bat is not None and len(team_bat) > 0:
+        local_df = local_df[local_df['team_bat'].isin(team_bat)]
+
+    if team_bowl is not None and len(team_bowl) > 0:
+        local_df = local_df[local_df['team_bowl'].isin(team_bowl)]
+
     #competition filter
     if competition:
         local_df = local_df[local_df['competition'] == competition]
@@ -90,8 +97,11 @@ def wagon_zone_plot(
 
 
     #ground filter
-    if ground is not None:
-        local_df = local_df[local_df['ground'] == ground]
+    # if ground is not None:
+    #     local_df = local_df[local_df['ground'] == ground]
+
+    if ground is not None and len(ground) > 0:
+        local_df = local_df[local_df['ground'].isin(ground)]
 
 
     if bat_hand is not None:
@@ -497,7 +507,7 @@ def wagon_zone_plot_descriptive(
     title_components=['title', 'filters'], shots_breakdown_options=['0s', '1s', '2s', '3s', '4s', '6s'],  # NEW: Which runs to show
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None, show_shots_breakdown=True,
     show_title=True, show_summary=True,show_fours_sixes=True, show_control=True, 
-    show_bowl_type=True, show_bowl_kind=True, show_bowl_arm=True,
+    show_bowl_type=True, show_bowl_kind=True, show_bowl_arm=True, show_venue=True,
     show_prod_shot=True,runs_count=True, show_bowler=True, show_overs=True, show_phase=True
 ):
     # ---- Apply Filters for Plotting ----
@@ -538,11 +548,19 @@ def wagon_zone_plot_descriptive(
     if run_values is not None:
         local_df = local_df[local_df['batruns'].isin(run_values)] #batruns
 
-    if team_bat is not None and team_bat != "All":
-        local_df = local_df[local_df['team_bat'] == team_bat]
+    # if team_bat is not None and team_bat != "All":
+    #     local_df = local_df[local_df['team_bat'] == team_bat]
 
-    if team_bowl is not None and team_bowl != "All":
-        local_df = local_df[local_df['team_bowl'] == team_bowl]
+    # if team_bowl is not None and team_bowl != "All":
+    #     local_df = local_df[local_df['team_bowl'] == team_bowl]
+
+    if team_bat is not None and len(team_bat) > 0:
+        local_df = local_df[local_df['team_bat'].isin(team_bat)]
+
+    if team_bowl is not None and len(team_bowl) > 0:
+        local_df = local_df[local_df['team_bowl'].isin(team_bowl)]
+
+
     #competition filter
     if competition:
         local_df = local_df[local_df['competition'] == competition]
@@ -572,8 +590,12 @@ def wagon_zone_plot_descriptive(
         local_df = local_df[local_df['date'] <= pd.to_datetime(date_to)]
 
     #ground filter
-    if ground is not None:
-        local_df = local_df[local_df['ground'] == ground]
+    # if ground is not None:
+    #     local_df = local_df[local_df['ground'] == ground]
+
+    if ground is not None and len(ground) > 0:
+        local_df = local_df[local_df['ground'].isin(ground)]
+
 
 
     if bat_hand is not None:
@@ -750,7 +772,7 @@ def wagon_zone_plot_descriptive(
     # ax.set_xlim(-20, 470)
     # ax.set_ylim(-50, 370)
     ax.set_xlim(-20, 380)
-    ax.set_ylim(-40, 580)
+    ax.set_ylim(-40, 600)
     ax.invert_yaxis()   
     ax.set_aspect('equal')
     ax.set_axis_off()
@@ -949,7 +971,7 @@ def wagon_zone_plot_descriptive(
             ax.text(180, 475, f"vs {bowler_name}", fontsize=11, ha='center',
                 color='blue', fontweight='bold')
         else:
-            ax.text(300, 475, f" | vs {bowler_name}", fontsize=11, ha='center',
+            ax.text(320, 475, f" | vs {bowler_name}", fontsize=11, ha='center',
                 color='blue', fontweight='bold')
         # ax.text(300, 475, f" | vs {bowler_name}", fontsize=11, ha='center',
         #         color='blue', fontweight='bold')
@@ -1038,6 +1060,17 @@ def wagon_zone_plot_descriptive(
             ax.text(180, 540, f"Bowl Type: {bowl_type_text}", 
                     fontsize=10, ha='center', color='darkviolet', fontweight='bold')
 
+    if show_venue:
+        if ground is None or len(ground) == 0:
+            ground = "All Venues"
+        elif len(ground) == 1:
+            ground = ground[0]
+        else:
+            ground = ", ".join(ground)
+
+        ax.text(180, 580, f"Venue: {ground}", 
+                fontsize=10, ha='center', color='blue', fontweight='bold')
+        
     if show_bowl_kind:
         # Format bowl_kind text
         # bowl_kind_text = bowl_kind if bowl_kind is not None else "All"

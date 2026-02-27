@@ -346,10 +346,10 @@ if st.session_state.df is not None:
     # squad_file = "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx"
 
     try:
-        squad_file = "data/2026-WT20-Squads.xlsx"
+        squad_file = "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx"
     except FileNotFoundError:
         try:
-            squad_file = "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx"
+            squad_file = "data/2026-WT20-Squads.xlsx"
         except FileNotFoundError:
             raise FileNotFoundError("Squad file not found in either location.")
 
@@ -695,10 +695,13 @@ if df is not None:
         # Batting Team Filter (from working_df)
         batting_teams = sorted(working_df['team_bat'].dropna().unique())
         team_bat_options = ["All"] + list(batting_teams)
-        selected_team = st.selectbox("Batting Team", team_bat_options, index=0)
+        # selected_team = st.selectbox("Batting Team", team_bat_options, index=0)
+        selected_team = st.multiselect("Batting Team", team_bat_options, default=[])
         
-        if selected_team != "All":
-            working_df = working_df[working_df['team_bat'] == selected_team]
+        # if selected_team != "All":
+        #     working_df = working_df[working_df['team_bat'] == selected_team]
+        if selected_team and len(selected_team) > 0:
+            working_df = working_df[working_df['team_bat'].isin(selected_team)]
             selected_team_value = selected_team
         else:
             selected_team_value = None
@@ -742,13 +745,13 @@ if df is not None:
         # Bowling Team Filter (from working_df, excluding batting team)
         bowling_teams = sorted(working_df['team_bowl'].dropna().unique())
         # Exclude selected batting team from bowling options
-        if selected_team != "All":
-            bowling_teams = [t for t in bowling_teams if t != selected_team]
+        if selected_team and len(selected_team) > 0:
+            bowling_teams = [t for t in bowling_teams if t not in selected_team]
         team_bowl_options = ["All"] + list(bowling_teams)
-        selected_team_bowl = st.selectbox("Bowling Team", team_bowl_options, index=0)
+        selected_team_bowl = st.multiselect("Bowling Team", team_bowl_options, default=[])
         
-        if selected_team_bowl != "All":
-            working_df = working_df[working_df['team_bowl'] == selected_team_bowl]
+        if selected_team_bowl and len(selected_team_bowl) > 0:
+            working_df = working_df[working_df['team_bowl'].isin(selected_team_bowl)]
             selected_team_bowl_value = selected_team_bowl
         else:
             selected_team_bowl_value = None
@@ -878,12 +881,26 @@ if df is not None:
         phase = phase_map.get(selected_phase_str, None)
         
         # Ground Filter (dropdown)
+        # if 'ground' in working_df.columns:
+        #     ground_options = sorted(working_df['ground'].dropna().unique())
+        #     ground_display = ["All"] + list(ground_options)
+        #     # selected_ground_str = st.selectbox("Ground", ground_display, index=0)
+        #     selected_ground_str = st.multiselect("Ground", ground_display, default=[])
+            
+        #     if selected_ground_str != ["All"] and len(selected_ground_str) > 0:
+        #         working_df = working_df[working_df['ground'].isin(selected_ground_str)]
+        #         selected_ground = selected_ground_str
+        #     else:
+        #         selected_ground = None
+        # else:
+        #     selected_ground = None
+
+        #updated ground filters
         if 'ground' in working_df.columns:
             ground_options = sorted(working_df['ground'].dropna().unique())
-            ground_display = ["All"] + list(ground_options)
-            selected_ground_str = st.selectbox("Ground", ground_display, index=0)
-            
-            if selected_ground_str != "All":
+            selected_ground_str = st.multiselect("Venue", ground_options, default=[])
+            if selected_ground_str:
+                working_df = working_df[working_df['ground'].isin(selected_ground_str)]
                 selected_ground = selected_ground_str
             else:
                 selected_ground = None
@@ -951,6 +968,7 @@ if df is not None:
                 show_prod_shot = st.checkbox("Show Productive Shot", value=True)
                 show_overs = st.checkbox("Show Overs", value=True)
                 show_phase = st.checkbox("Show Phase", value=False)
+                show_venue = st.checkbox("Show Venue", value=True)
                 show_ground = st.checkbox("Show Ground Image", value=True)
 
             with col3:
@@ -1023,8 +1041,9 @@ if df is not None:
                     show_prod_shot=show_prod_shot,
                     show_bowler=show_bowler,
                     show_ground=show_ground,
+                    show_venue=show_venue,
                     show_overs=show_overs,
-                    show_phase=show_phase
+                    show_phase=show_phase,
                 )
                 with col2:
                     st.pyplot(fig_spike)
@@ -1071,6 +1090,7 @@ if df is not None:
                 show_prod_shot_trans = st.checkbox("Show Productive Shot", value=True, key="spike_trans_prod")
                 show_overs_trans = st.checkbox("Show Overs", value=True, key="spike_trans_overs")
                 show_phase_trans = st.checkbox("Show Phase", value=True, key="spike_trans_phase")
+                show_venue_trans = st.checkbox("Show Venue", value=True, key="spike_trans_venue")
                 show_ground_trans = st.checkbox("Show Ground Image", value=True, key="spike_trans_ground")
 
             with col3:
@@ -1143,6 +1163,7 @@ if df is not None:
                     show_prod_shot=show_prod_shot_trans,
                     show_bowler=show_bowler_trans,
                     show_ground=show_ground_trans,
+                    show_venue=show_venue_trans,
                     show_overs=show_overs_trans,
                     show_phase=show_phase_trans
                 )
@@ -1195,6 +1216,7 @@ if df is not None:
                 show_bowl_type_desc = st.checkbox("Show Bowl Type", value=True, key="spike_desc_bowl_type")
                 show_bowl_kind_desc = st.checkbox("Show Bowl Pace", value=True, key="spike_desc_bowl_kind")
                 show_bowl_arm_desc = st.checkbox("Show Bowl Arm", value=True, key="spike_desc_bowl_arm")
+                show_venue_desc = st.checkbox("Show Venue", value=True, key="spike_desc_venue")
 
             with col3:
                 st.markdown("## Run Filter (Spike Plot)")
@@ -1265,6 +1287,7 @@ if df is not None:
                     show_prod_shot=show_prod_shot_desc,
                     show_bowler=show_bowler_desc,
                     show_ground=show_ground_desc,
+                    show_venue=show_venue_desc,
                     show_overs=show_overs_desc,
                     show_phase=show_phase_desc,
                     show_bowl_type=show_bowl_type_desc,
@@ -1320,6 +1343,7 @@ if df is not None:
                 show_bowl_type_desc_trans = st.checkbox("Show Bowl Type", value=True, key="spike_desc_trans_bowl_type")
                 show_bowl_kind_desc_trans = st.checkbox("Show Bowl Pace", value=True, key="spike_desc_trans_bowl_kind")
                 show_bowl_arm_desc_trans = st.checkbox("Show Bowl Arm", value=True, key="spike_desc_trans_bowl_arm")
+                show_venue_desc_trans = st.checkbox("Show Venue", value=True, key="spike_desc_trans_venue")
 
             with col3:
                 st.markdown("## Run Filter (Spike Plot)")
@@ -1390,6 +1414,7 @@ if df is not None:
                     show_prod_shot=show_prod_shot_desc_trans,
                     show_bowler=show_bowler_desc_trans,
                     show_ground=show_ground_desc_trans,
+                    show_venue=show_venue_desc_trans,
                     show_overs=show_overs_desc_trans,
                     show_phase=show_phase_desc_trans,
                     show_bowl_type=show_bowl_type_desc_trans,
@@ -1913,6 +1938,7 @@ if df is not None:
                 show_prod_shot_dismissal = st.checkbox("Show Most Loose Shot", value=True, key="prod_shot_dismissal")
                 show_overs_dismissal = st.checkbox("Show Overs", value=True, key="overs_dismissal")
                 show_phase_dismissal = st.checkbox("Show Phase", value=True, key="phase_dismissal")
+                show_venue_dismissal = st.checkbox("Show Venue", value=True, key="venue_dismissal")
                 show_bowl_type_dismissal = st.checkbox("Show Bowl Type", value=True, key="bowl_type_dismissal")
                 show_bowl_kind_dismissal = st.checkbox("Show Bowl Pace", value=True, key="bowl_kind_dismissal")
                 show_bowl_arm_dismissal = st.checkbox("Show Bowl Arm", value=True, key="bowl_arm_dismissal")
@@ -1952,6 +1978,7 @@ if df is not None:
                     runs_count=False,
                     show_bowler=show_bowler_dismissal,
                     show_ground=show_ground_dismissal,
+                    show_venue=show_venue_dismissal,
                     show_overs=show_overs_dismissal,
                     show_phase=show_phase_dismissal,
                     show_bowl_type=show_bowl_type_dismissal,
@@ -2007,6 +2034,7 @@ if df is not None:
                 show_prod_shot_dismissal_trans = st.checkbox("Show Most Loose Shot", value=True, key="prod_shot_dismissal_trans")
                 show_overs_dismissal_trans = st.checkbox("Show Overs", value=True, key="overs_dismissal_trans")
                 show_phase_dismissal_trans = st.checkbox("Show Phase", value=True, key="phase_dismissal_trans")
+                show_venue_dismissal_trans = st.checkbox("Show Venue", value=True, key="venue_dismissal_trans")
                 show_bowl_type_dismissal_trans = st.checkbox("Show Bowl Type", value=True, key="bowl_type_dismissal_trans")
                 show_bowl_kind_dismissal_trans = st.checkbox("Show Bowl Pace", value=True, key="bowl_kind_dismissal_trans")
                 show_bowl_arm_dismissal_trans = st.checkbox("Show Bowl Arm", value=True, key="bowl_arm_dismissal_trans")
@@ -2046,6 +2074,7 @@ if df is not None:
                     runs_count=False,
                     show_bowler=show_bowler_dismissal_trans,
                     show_ground=show_ground_dismissal_trans,
+                    show_venue=show_venue_dismissal_trans,
                     show_overs=show_overs_dismissal_trans,
                     show_phase=show_phase_dismissal_trans,
                     show_bowl_type=show_bowl_type_dismissal_trans,
@@ -2131,5 +2160,4 @@ if df is not None:
             st.info(f"Ready to download {len(all_figures)} plot(s)")
 
 else:
-
     st.info("Please select a dataset source to begin.")
