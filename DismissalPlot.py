@@ -209,6 +209,15 @@ def dismissal_plot(
     # else:
     #     team_bowl = "All Teams"
 
+    # --- Updated team_bowl logic: always use unique from filtered data ---
+    unique_bowling_teams = local_df['team_bowl'].dropna().unique()
+    if len(unique_bowling_teams) == 1:
+        team_bowl = unique_bowling_teams[0]
+    elif len(unique_bowling_teams) > 1:
+        team_bowl = "All Teams"
+    else:
+        team_bowl = "Opponents"
+
 
     
     # This keeps a copy of the full innings shot data (unfiltered)
