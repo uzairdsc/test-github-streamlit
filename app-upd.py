@@ -36,7 +36,7 @@ st.set_page_config(page_title="Cricket Wagon Wheel App" ,page_icon="🏏" ,layou
 st.title("🏏 Cricket Wagon Wheel Analysis Dashboard")
 
 
-@st.cache_data(ttl=3600)  # Cache for 1 hour
+@st.cache_data(ttl=60)  # Cache for 1 minute
 def load_from_s3(bucket_name, file_key, aws_access_key, aws_secret_key, region_name='us-east-1'):
     """Load CSV from S3 bucket"""
     try:
@@ -326,9 +326,9 @@ elif data_source == "Cache_since24WC":
 # Add a clear data button
 if st.session_state.df is not None:
     if st.sidebar.button("🗑️ Clear Loaded Data"):
+        st.cache_data.clear()
         st.session_state.df = None
         st.rerun()
-        
 
 # ===== BATCH PLOT GENERATION SECTION =====
 if st.session_state.df is not None:
@@ -2163,3 +2163,4 @@ if df is not None:
 else:
 
     st.info("Please select a dataset source to begin.")
+
