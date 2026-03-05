@@ -53,8 +53,12 @@ def dismissal_plot(
     if mat_num is not None:
         local_df = local_df[local_df['p_match'] == mat_num]
 
-    if inns is not None:
-        local_df = local_df[local_df['inns'] == inns]
+    # if inns is not None:
+    #     local_df = local_df[local_df['inns'] == inns]
+
+    if inns is not None and len(inns) > 0:
+        local_df = local_df[local_df['inns'].isin(inns)]
+
         
     # if team_bat is not None and team_bat != "All":
     #     local_df = local_df[local_df['team_bat'] == team_bat]
@@ -77,13 +81,23 @@ def dismissal_plot(
         local_df = local_df[local_df['over'].isin(over_values)]
 
     # Phase filter (takes priority over over_values if both provided)
-    if phase is not None:
-        if phase == 1 or phase == "Powerplay":
-            local_df = local_df[local_df['over'].between(1, 6)]
-        elif phase == 2 or phase == "Middle":
-            local_df = local_df[local_df['over'].between(7, 15)]
-        elif phase == 3 or phase == "Death":
-            local_df = local_df[local_df['over'].between(16, 20)]
+    # if phase is not None:
+    #     if phase == 1 or phase == "Powerplay":
+    #         local_df = local_df[local_df['over'].between(1, 6)]
+    #     elif phase == 2 or phase == "Middle":
+    #         local_df = local_df[local_df['over'].between(7, 15)]
+    #     elif phase == 3 or phase == "Death":
+    #         local_df = local_df[local_df['over'].between(16, 20)]
+
+    if phase is not None and len(phase) > 0:
+        mask = pd.Series([False] * len(local_df), index=local_df.index)
+        if 1 in phase:
+            mask |= local_df['over'].between(1, 6)
+        if 2 in phase:
+            mask |= local_df['over'].between(7, 15)
+        if 3 in phase:
+            mask |= local_df['over'].between(16, 20)
+        local_df = local_df[mask]
 
     # Date range filter
     if date_from is not None:
@@ -125,8 +139,10 @@ def dismissal_plot(
 
 
     #match code like PAK v NED
-    if mcode is not None:
-        local_df = local_df[local_df['mcode'] == mcode]
+    # if mcode is not None:
+    #     local_df = local_df[local_df['mcode'] == mcode]
+    if mcode is not None and len(mcode) > 0:
+        local_df = local_df[local_df['mcode'].isin(mcode)]
 
     # === Total Innings Summary ===
     # innings_valid_balls = local_df[local_df['wides'] == 0]
@@ -780,7 +796,13 @@ def dismissal_plot(
             2: "Middle (7-15)", 
             3: "Death (16-20)"
         }
-        phase_text = phase_names.get(phase, "All")
+        # phase_text = phase_names.get(phase, "All")
+
+        if isinstance(phase, list):
+            phase_text = ", ".join([phase_names.get(p, str(p)) for p in phase]) if phase else "All"
+        else:
+            phase_text = phase_names.get(phase, "All")
+
 
         if not show_overs:
             ax.text(180, 570, f"Phase: {phase_text}", 

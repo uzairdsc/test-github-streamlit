@@ -7,6 +7,7 @@ from io import BytesIO
 import boto3
 from botocore.exceptions import NoCredentialsError
 import zipfile
+import os
 
 # Set your custom password here
 APP_PASSWORD = st.secrets["auth"]["password"]
@@ -36,7 +37,7 @@ st.set_page_config(page_title="Cricket Wagon Wheel App" ,page_icon="🏏" ,layou
 st.title("🏏 Cricket Wagon Wheel Analysis Dashboard")
 
 
-@st.cache_data(ttl=60)  # Cache for 1 minute
+@st.cache_data(ttl=60)  # Cache for 1 min
 def load_from_s3(bucket_name, file_key, aws_access_key, aws_secret_key, region_name='us-east-1'):
     """Load CSV from S3 bucket"""
     try:
@@ -329,6 +330,7 @@ if st.session_state.df is not None:
         st.cache_data.clear()
         st.session_state.df = None
         st.rerun()
+        
 
 # ===== BATCH PLOT GENERATION SECTION =====
 if st.session_state.df is not None:
@@ -345,15 +347,18 @@ if st.session_state.df is not None:
     # squad_file = "data//2026-WT20-Squads.xlsx"
     # squad_file = "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx"
 
-    try:
-        # squad_file = "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx"
-        squad_file = "data/2026-WT20-Squads.xlsx"
-    except FileNotFoundError:
-        try:
-            squad_file = "data/2026-WT20-Squads.xlsx"
-        except FileNotFoundError:
-            raise FileNotFoundError("Squad file not found in either location.")
+    
+    # List of possible file paths (in order of preference)
+    possible_paths = [
+        "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx",
+        "data/2026-WT20-Squads.xlsx"
+    ]
 
+    squad_file = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            squad_file = path
+            break
 
     if squad_file:
         # Read squad file
@@ -669,15 +674,24 @@ if df is not None:
             selected_mat_num = None
         
         # Match Code Filter (from working_df)
+        # if 'mcode' in working_df.columns:
+        #     mcode_options = sorted(working_df['mcode'].dropna().unique())
+        #     mcode_display = ["All"] + list(mcode_options)
+        #     selected_mcode_str = st.selectbox("Match Code", mcode_display, index=0)
+            
+        #     if selected_mcode_str != "All":
+        #         selected_mcode = selected_mcode_str
+        #     else:
+        #         selected_mcode = None
+        # else:
+        #     selected_mcode = None
+
         if 'mcode' in working_df.columns:
             mcode_options = sorted(working_df['mcode'].dropna().unique())
-            mcode_display = ["All"] + list(mcode_options)
-            selected_mcode_str = st.selectbox("Match Code", mcode_display, index=0)
-            
-            if selected_mcode_str != "All":
-                selected_mcode = selected_mcode_str
-            else:
-                selected_mcode = None
+            selected_mcode = st.multiselect("Match Code", mcode_options, default=[])
+            # Filtering logic (if you want to filter working_df here)
+            if selected_mcode:
+                working_df = working_df[working_df['mcode'].isin(selected_mcode)]
         else:
             selected_mcode = None
         
@@ -847,13 +861,20 @@ if df is not None:
     with filter_col4:
         
         # Innings Filter (from working_df)
-        innings_options = sorted(working_df['inns'].dropna().unique())
-        innings_display = ["All"] + [str(int(i)) for i in innings_options]
-        selected_inns_str = st.selectbox("Innings", innings_display, index=0)
+        # innings_options = sorted(working_df['inns'].dropna().unique())
+        # innings_display = ["All"] + [str(int(i)) for i in innings_options]
+        # selected_inns_str = st.selectbox("Innings", innings_display, index=0)
         
-        if selected_inns_str != "All":
-            selected_inns = int(selected_inns_str)
-            working_df = working_df[working_df['inns'] == selected_inns]
+        # if selected_inns_str != "All":
+        #     selected_inns = int(selected_inns_str)
+        #     working_df = working_df[working_df['inns'] == selected_inns]
+        # else:
+        #     selected_inns = None
+
+        innings_options = sorted(working_df['inns'].dropna().unique())
+        selected_inns = st.multiselect("Innings", [int(i) for i in innings_options], default=[])
+        if selected_inns:
+            working_df = working_df[working_df['inns'].isin(selected_inns)]
         else:
             selected_inns = None
         
@@ -871,16 +892,26 @@ if df is not None:
             over_values = None
         
         # Phase Filter (dropdown)
-        phase_options = ["All", "Powerplay (1-6)", "Middle (7-15)", "Death (16-20)"]
-        selected_phase_str = st.selectbox("Phase", phase_options, index=0)
+        # phase_options = ["All", "Powerplay (1-6)", "Middle (7-15)", "Death (16-20)"]
+        # selected_phase_str = st.selectbox("Phase", phase_options, index=0)
         
+        # phase_map = {
+        #     "Powerplay (1-6)": 1,
+        #     "Middle (7-15)": 2,
+        #     "Death (16-20)": 3
+        # }
+        # phase = phase_map.get(selected_phase_str, None)
+
+        phase_options = ["Powerplay (1-6)", "Middle (7-15)", "Death (16-20)"]
+        selected_phase_str = st.multiselect("Phase", phase_options, default=[])
         phase_map = {
             "Powerplay (1-6)": 1,
             "Middle (7-15)": 2,
             "Death (16-20)": 3
         }
-        phase = phase_map.get(selected_phase_str, None)
-        
+        phase = [phase_map[p] for p in selected_phase_str] if selected_phase_str else None
+
+
         # Ground Filter (dropdown)
         # if 'ground' in working_df.columns:
         #     ground_options = sorted(working_df['ground'].dropna().unique())
@@ -2161,6 +2192,4 @@ if df is not None:
             st.info(f"Ready to download {len(all_figures)} plot(s)")
 
 else:
-
     st.info("Please select a dataset source to begin.")
-

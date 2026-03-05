@@ -37,8 +37,11 @@ def wagon_zone_plot(
         # local_df = local_df[local_df['TestNum'] == mat_num]
         local_df = local_df[local_df['p_match'] == mat_num] # p_match
 
-    if inns:
-        local_df = local_df[local_df['inns'] == inns] # inns
+    # if inns:
+    #     local_df = local_df[local_df['inns'] == inns] # inns
+
+    if inns is not None and len(inns) > 0:
+        local_df = local_df[local_df['inns'].isin(inns)]
 
     if bowler_id is not None:
         local_df = local_df[local_df['p_bowl'] == bowler_id]
@@ -76,17 +79,30 @@ def wagon_zone_plot(
         local_df = local_df[local_df['over'].isin(over_values)]
 
     # Phase filter (takes priority over over_values if both provided)
-    if phase is not None:
-        if phase == 1 or phase == "Powerplay":
-            local_df = local_df[local_df['over'].between(1, 6)]
-        elif phase == 2 or phase == "Middle":
-            local_df = local_df[local_df['over'].between(7, 15)]
-        elif phase == 3 or phase == "Death":
-            local_df = local_df[local_df['over'].between(16, 20)]
+    # if phase is not None:
+    #     if phase == 1 or phase == "Powerplay":
+    #         local_df = local_df[local_df['over'].between(1, 6)]
+    #     elif phase == 2 or phase == "Middle":
+    #         local_df = local_df[local_df['over'].between(7, 15)]
+    #     elif phase == 3 or phase == "Death":
+    #         local_df = local_df[local_df['over'].between(16, 20)]
+
+    if phase is not None and len(phase) > 0:
+        mask = pd.Series([False] * len(local_df), index=local_df.index)
+        if 1 in phase:
+            mask |= local_df['over'].between(1, 6)
+        if 2 in phase:
+            mask |= local_df['over'].between(7, 15)
+        if 3 in phase:
+            mask |= local_df['over'].between(16, 20)
+        local_df = local_df[mask]
 
     #match code like PAK v NED
-    if mcode is not None:
-        local_df = local_df[local_df['mcode'] == mcode]
+    # if mcode is not None:
+    #     local_df = local_df[local_df['mcode'] == mcode]
+
+    if mcode is not None and len(mcode) > 0:
+        local_df = local_df[local_df['mcode'].isin(mcode)]
 
     # Date range filter
     if date_from is not None:
@@ -466,7 +482,13 @@ def wagon_zone_plot(
             2: "Middle (7-15)", 
             3: "Death (16-20)"
         }
-        phase_text = phase_names.get(phase, "All")
+        # phase_text = phase_names.get(phase, "All")
+
+        if isinstance(phase, list):
+            phase_text = ", ".join([phase_names.get(p, str(p)) for p in phase]) if phase else "All"
+        else:
+            phase_text = phase_names.get(phase, "All")
+
         ax.text(430, 320, f"Phase: {phase_text}", 
                 fontsize=10, ha='center', color='crimson', fontweight='bold')
     
@@ -530,8 +552,11 @@ def wagon_zone_plot_descriptive(
         # local_df = local_df[local_df['TestNum'] == mat_num]
         local_df = local_df[local_df['p_match'] == mat_num] # p_match
 
-    if inns:
-        local_df = local_df[local_df['inns'] == inns] # inns
+    # if inns:
+    #     local_df = local_df[local_df['inns'] == inns] # inns
+
+    if inns is not None and len(inns) > 0:
+        local_df = local_df[local_df['inns'].isin(inns)]
 
     if bowler_id is not None:
         local_df = local_df[local_df['p_bowl'] == bowler_id]
@@ -570,17 +595,30 @@ def wagon_zone_plot_descriptive(
         local_df = local_df[local_df['over'].isin(over_values)]
 
     # Phase filter (takes priority over over_values if both provided)
-    if phase is not None:
-        if phase == 1 or phase == "Powerplay":
-            local_df = local_df[local_df['over'].between(1, 6)]
-        elif phase == 2 or phase == "Middle":
-            local_df = local_df[local_df['over'].between(7, 15)]
-        elif phase == 3 or phase == "Death":
-            local_df = local_df[local_df['over'].between(16, 20)]
+    # if phase is not None:
+    #     if phase == 1 or phase == "Powerplay":
+    #         local_df = local_df[local_df['over'].between(1, 6)]
+    #     elif phase == 2 or phase == "Middle":
+    #         local_df = local_df[local_df['over'].between(7, 15)]
+    #     elif phase == 3 or phase == "Death":
+    #         local_df = local_df[local_df['over'].between(16, 20)]
+
+    if phase is not None and len(phase) > 0:
+        mask = pd.Series([False] * len(local_df), index=local_df.index)
+        if 1 in phase:
+            mask |= local_df['over'].between(1, 6)
+        if 2 in phase:
+            mask |= local_df['over'].between(7, 15)
+        if 3 in phase:
+            mask |= local_df['over'].between(16, 20)
+        local_df = local_df[mask]
 
     #match code like PAK v NED
-    if mcode is not None:
-        local_df = local_df[local_df['mcode'] == mcode]
+    # if mcode is not None:
+    #     local_df = local_df[local_df['mcode'] == mcode]
+
+    if mcode is not None and len(mcode) > 0:
+        local_df = local_df[local_df['mcode'].isin(mcode)]
         
     # Date range filter
     if date_from is not None:
@@ -1028,7 +1066,12 @@ def wagon_zone_plot_descriptive(
             2: "Middle (7-15)", 
             3: "Death (16-20)"
         }
-        phase_text = phase_names.get(phase, "All")
+        # phase_text = phase_names.get(phase, "All")
+
+        if isinstance(phase, list):
+            phase_text = ", ".join([phase_names.get(p, str(p)) for p in phase]) if phase else "All"
+        else:
+            phase_text = phase_names.get(phase, "All")
 
         if not show_overs:
             ax.text(180, 520, f"Phase: {phase_text}", 
