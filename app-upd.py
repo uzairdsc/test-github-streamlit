@@ -351,7 +351,9 @@ if st.session_state.df is not None:
     # List of possible file paths (in order of preference)
     possible_paths = [
         "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx",
+        "../data/daily_updated_t20_data/2026-PSL-Squads.xlsx",
         "data/2026-WT20-Squads.xlsx"
+        "data/2026-PSL-Squads.xlsx"
     ]
 
     squad_file = None
@@ -2192,4 +2194,5 @@ if df is not None:
             st.info(f"Ready to download {len(all_figures)} plot(s)")
 
 else:
+
     st.info("Please select a dataset source to begin.")
