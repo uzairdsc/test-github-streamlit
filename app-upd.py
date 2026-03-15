@@ -366,7 +366,7 @@ if st.session_state.df is not None:
         # Read squad file
         try:
             if squad_file.endswith('.xlsx'):
-                squad_df = pd.read_excel(squad_file)
+                squad_df = pd.read_excel(squad_file, sheet_name="Squads)
             else:
                 squad_df = pd.read_csv(squad_file)
             
