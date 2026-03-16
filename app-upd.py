@@ -37,6 +37,29 @@ st.set_page_config(page_title="Cricket Wagon Wheel App" ,page_icon="🏏" ,layou
 st.title("🏏 Cricket Wagon Wheel Analysis Dashboard")
 
 
+def normalize_data(df):
+    """Convert wagonX and wagonY to numeric to prevent type errors in plotting"""
+    if df is None:
+        return None
+    
+    df = df.copy()
+
+    # In normalize_data() function
+    df['wagonX'] = df['wagonX'].fillna(0.0)
+    df['wagonY'] = df['wagonY'].fillna(0.0)
+    
+    # Convert wagonX and wagonY to numeric (handles strings, ints, floats)
+    if 'wagonX' in df.columns:
+        df['wagonX'] = pd.to_numeric(df['wagonX'], errors='coerce')
+    if 'wagonY' in df.columns:
+        df['wagonY'] = pd.to_numeric(df['wagonY'], errors='coerce')
+    
+    # # In normalize_data() function
+    # df['wagonX'] = df['wagonX'].fillna(0.0)
+    # df['wagonY'] = df['wagonY'].fillna(0.0)
+
+    return df
+
 @st.cache_data(ttl=60)  # Cache for 1 min
 def load_from_s3(bucket_name, file_key, aws_access_key, aws_secret_key, region_name='us-east-1'):
     """Load CSV from S3 bucket"""
@@ -51,6 +74,7 @@ def load_from_s3(bucket_name, file_key, aws_access_key, aws_secret_key, region_n
         with st.spinner(f"Loading data from S3: {file_key}..."):
             obj = s3_client.get_object(Bucket=bucket_name, Key=file_key)
             df = pd.read_csv(obj['Body'], low_memory=False)
+            df = normalize_data(df)  # Ensure wagonX/Y are numeric
             st.success(f"Loaded {len(df)} rows from S3")
             return df
     except NoCredentialsError:
@@ -97,7 +121,7 @@ def create_zip_of_plots(figures_dict):
 st.sidebar.header("📂 Select Dataset Source")
 data_source = st.sidebar.selectbox(
     "Choose data source:",
-    ["Upload Data File", "S3_2026-WT20-bbb", "S3_since26" ,"S3_since24", "S3_since24WC", "S3_all", "S3_HG_2026-WT20-bbb", "Cache_all", "Cache_since24", "Cache_since24WC"]
+    ["Upload Data File", "S3_since24", "S3_all", "S3_HG_2026-WT20-bbb", "Cache_all", "Cache_since24", "Cache_since24WC"]
 )
 
 # Initialize session state for df
@@ -110,32 +134,9 @@ if data_source == "Upload Data File":
     uploaded_file = st.sidebar.file_uploader("Upload CSV File", type=["csv"])
     if uploaded_file:
         df = pd.read_csv(uploaded_file, low_memory=False)
+        df = normalize_data(df)  # Ensure wagonX/Y are numeric
         st.session_state.df = df
         st.sidebar.success(f"Loaded {len(df):,} rows")
-
-elif data_source == "S3_2026-WT20-bbb":
-    if "aws" in st.secrets:
-        bucket = st.secrets["aws"]["bucket_name"]
-        access_key = st.secrets["aws"]["access_key_id"]
-        secret_key = st.secrets["aws"]["secret_access_key"]
-        region = st.secrets["aws"].get("region_name", "ap-south-1")
-        
-        s3_file_key = st.sidebar.text_input(
-            "Enter S3 file path:",
-            value="2026-WT20-bbb-data.csv"
-        )
-        
-        if st.sidebar.button("Load from S3", key="load_2025"):
-            loaded_df = load_from_s3(bucket, s3_file_key, access_key, secret_key, region)
-            if loaded_df is not None:
-                st.session_state.df = loaded_df
-                df = loaded_df
-        
-        # Show current loaded data info
-        if st.session_state.df is not None:
-            st.sidebar.info(f"Current data: {len(st.session_state.df):,} rows")
-    else:
-        st.sidebar.warning("⚠️ AWS credentials not configured in secrets.toml")
 
 elif data_source == "S3_HG_2026-WT20-bbb":
     if "aws" in st.secrets:
@@ -152,6 +153,7 @@ elif data_source == "S3_HG_2026-WT20-bbb":
         if st.sidebar.button("Load from S3", key="load_2025"):
             loaded_df = load_from_s3(bucket, s3_file_key, access_key, secret_key, region)
             if loaded_df is not None:
+                loaded_df = normalize_data(loaded_df)  # Ensure wagonX/Y are numeric
                 st.session_state.df = loaded_df
                 df = loaded_df
         
@@ -176,30 +178,7 @@ elif data_source == "S3_since24":
         if st.sidebar.button("Load from S3", key="load_2025"):
             loaded_df = load_from_s3(bucket, s3_file_key, access_key, secret_key, region)
             if loaded_df is not None:
-                st.session_state.df = loaded_df
-                df = loaded_df
-        
-        # Show current loaded data info
-        if st.session_state.df is not None:
-            st.sidebar.info(f"Current data: {len(st.session_state.df):,} rows")
-    else:
-        st.sidebar.warning("⚠️ AWS credentials not configured in secrets.toml")
-
-elif data_source == "S3_since24WC":
-    if "aws" in st.secrets:
-        bucket = st.secrets["aws"]["bucket_name"]
-        access_key = st.secrets["aws"]["access_key_id"]
-        secret_key = st.secrets["aws"]["secret_access_key"]
-        region = st.secrets["aws"].get("region_name", "ap-south-1")
-        
-        s3_file_key = st.sidebar.text_input(
-            "Enter S3 file path:",
-            value="t20_bbb_since_2024_WC.csv"
-        )
-        
-        if st.sidebar.button("Load from S3", key="load_2025"):
-            loaded_df = load_from_s3(bucket, s3_file_key, access_key, secret_key, region)
-            if loaded_df is not None:
+                loaded_df = normalize_data(loaded_df)  # Ensure wagonX/Y are numeric
                 st.session_state.df = loaded_df
                 df = loaded_df
         
@@ -224,30 +203,7 @@ elif data_source == "S3_all":
         if st.sidebar.button("Load from S3", key="load_complete"):
             loaded_df = load_from_s3(bucket, s3_file_key, access_key, secret_key, region)
             if loaded_df is not None:
-                st.session_state.df = loaded_df
-                df = loaded_df
-        
-        # Show current loaded data info
-        if st.session_state.df is not None:
-            st.sidebar.info(f"Current data: {len(st.session_state.df):,} rows")
-    else:
-        st.sidebar.warning("⚠️ AWS credentials not configured in secrets.toml")
-
-elif data_source == "S3_since26":
-    if "aws" in st.secrets:
-        bucket = st.secrets["aws"]["bucket_name"]
-        access_key = st.secrets["aws"]["access_key_id"]
-        secret_key = st.secrets["aws"]["secret_access_key"]
-        region = st.secrets["aws"].get("region_name", "ap-south-1")
-        
-        s3_file_key = st.sidebar.text_input(
-            "Enter S3 file path:",
-            value="t20_bbb_since_2026.csv"
-        )
-        
-        if st.sidebar.button("Load from S3", key="load_complete"):
-            loaded_df = load_from_s3(bucket, s3_file_key, access_key, secret_key, region)
-            if loaded_df is not None:
+                loaded_df = normalize_data(loaded_df)  # Ensure wagonX/Y are numeric
                 st.session_state.df = loaded_df
                 df = loaded_df
         
@@ -267,6 +223,7 @@ elif data_source == "Cache_all":
         try:
             with st.spinner(f"Loading data from {local_file_path}..."):
                 loaded_df = pd.read_csv(local_file_path, low_memory=False)
+                loaded_df = normalize_data(loaded_df)  # Ensure wagonX/Y are numeric
                 st.session_state.df = loaded_df
                 df = loaded_df
                 st.sidebar.success(f"Loaded {len(loaded_df):,} rows from local storage")
@@ -289,6 +246,7 @@ elif data_source == "Cache_since24":
         try:
             with st.spinner(f"Loading data from {local_file_path}..."):
                 loaded_df = pd.read_csv(local_file_path, low_memory=False)
+                loaded_df = normalize_data(loaded_df)  # Ensure wagonX/Y are numeric
                 st.session_state.df = loaded_df
                 df = loaded_df
                 st.sidebar.success(f"Loaded {len(loaded_df):,} rows from local storage")
@@ -311,6 +269,7 @@ elif data_source == "Cache_since24WC":
         try:
             with st.spinner(f"Loading data from {local_file_path}..."):
                 loaded_df = pd.read_csv(local_file_path, low_memory=False)
+                loaded_df = normalize_data(loaded_df)  # Ensure wagonX/Y are numeric
                 st.session_state.df = loaded_df
                 df = loaded_df
                 st.sidebar.success(f"Loaded {len(loaded_df):,} rows from local storage")
@@ -350,11 +309,11 @@ if st.session_state.df is not None:
     
     # List of possible file paths (in order of preference)
     possible_paths = [
-        "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx",
+        "../data/daily_updated_t20_data/2026-PSL-Squads.xlsx",
         "../data/daily_updated_t20_data/S2026_PSL.xlsx",
-        "data/2026-WT20-Squads.xlsx",
-        "data/S2026_PSL.xlsx"
-    ]
+        "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx",
+        "data/2026-PSL-Squads.xlsx"
+    ] 
 
     squad_file = None
     for path in possible_paths:
@@ -620,7 +579,7 @@ if df is not None:
     
     # ===== CASCADING FILTERS SECTION =====
     st.markdown("---")
-    st.subheader("Filter Options")
+    st.subheader("Value Filter Options")
     
     # Create 4 columns for filters
     filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
@@ -1733,6 +1692,7 @@ if df is not None:
                 show_bowl_type_wagon_desc = st.checkbox("Show Bowl Type (Wagon Desc)", value=True, key="wagon_desc_bowl_type")
                 show_bowl_kind_wagon_desc = st.checkbox("Show Bowl Pace (Wagon Desc)", value=True, key="wagon_desc_bowl_kind")
                 show_bowl_arm_wagon_desc = st.checkbox("Show Bowl Arm (Wagon Desc)", value=True, key="wagon_desc_bowl_arm")
+                show_venue_wagon_desc = st.checkbox("Show Venue (Wagon Desc)", value=True, key="wagon_desc_venue")
             
             with col3:
                 st.markdown("## Run Filter (Wagon Zone)")
@@ -1805,7 +1765,8 @@ if df is not None:
                     show_phase=show_phase_wagon_desc,
                     show_bowl_type=show_bowl_type_wagon_desc,
                     show_bowl_kind=show_bowl_kind_wagon_desc,
-                    show_bowl_arm=show_bowl_arm_wagon_desc
+                    show_bowl_arm=show_bowl_arm_wagon_desc,
+                    show_venue=show_venue_wagon_desc
                 )
                 with col2:
                     st.pyplot(fig_wagon_desc)
@@ -1854,6 +1815,7 @@ if df is not None:
                 show_bowl_type_wagon_desc_trans = st.checkbox("Show Bowl Type (Wagon Desc)", value=True, key="wagon_desc_trans_bowl_type")
                 show_bowl_kind_wagon_desc_trans = st.checkbox("Show Bowl Pace (Wagon Desc)", value=True, key="wagon_desc_trans_bowl_kind")
                 show_bowl_arm_wagon_desc_trans = st.checkbox("Show Bowl Arm (Wagon Desc)", value=True, key="wagon_desc_trans_bowl_arm")
+                show_venue_wagon_desc_trans = st.checkbox("Show Venue (Wagon Desc)", value=True, key="wagon_desc_trans_venue")
             
             with col3:
                 st.markdown("## Run Filter (Wagon Zone)")
@@ -1926,7 +1888,8 @@ if df is not None:
                     show_phase=show_phase_wagon_desc_trans,
                     show_bowl_type=show_bowl_type_wagon_desc_trans,
                     show_bowl_kind=show_bowl_kind_wagon_desc_trans,
-                    show_bowl_arm=show_bowl_arm_wagon_desc_trans
+                    show_bowl_arm=show_bowl_arm_wagon_desc_trans,
+                    show_venue=show_venue_wagon_desc_trans
                 )
                 with col2:
                     st.pyplot(fig_wagon_desc_trans)
@@ -2194,5 +2157,4 @@ if df is not None:
             st.info(f"Ready to download {len(all_figures)} plot(s)")
 
 else:
-
     st.info("Please select a dataset source to begin.")

@@ -196,6 +196,11 @@ def wagon_zone_plot(
         # total_6s = valid_shots['isSix'].sum()
         total_4s = (valid_shots['outcome'] == 'four').sum()
         total_6s = (valid_shots['outcome'] == 'six').sum()
+
+        total_0s = (valid_shots['batruns'] == 0).sum()
+        total_1s = (valid_shots['batruns'] == 1).sum()
+        total_2s = (valid_shots['batruns'] == 2).sum()
+        total_3s = (valid_shots['batruns'] == 3).sum()
         
         balls_faced = valid_balls.shape[0]
 
