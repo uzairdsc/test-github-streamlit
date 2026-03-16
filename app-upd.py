@@ -45,8 +45,11 @@ def normalize_data(df):
     df = df.copy()
 
     # In normalize_data() function
-    df['wagonX'] = df['wagonX'].fillna(0.0)
-    df['wagonY'] = df['wagonY'].fillna(0.0)
+    # Fill NaN values in wagonX and wagonY with 0.0 (represents dot balls)
+    if 'wagonX' in df.columns:
+        df['wagonX'] = df['wagonX'].fillna(0.0)
+    if 'wagonY' in df.columns:
+        df['wagonY'] = df['wagonY'].fillna(0.0)
     
     # Convert wagonX and wagonY to numeric (handles strings, ints, floats)
     if 'wagonX' in df.columns:
