@@ -716,21 +716,31 @@ if df is not None:
         
         # Date Range Filter (always shown)
         if 'date' in df.columns:
-            min_date = df['date'].min().date()
-            max_date = df['date'].max().date()
+            # Ensure date column is datetime format
+            if df['date'].dtype != 'datetime64[ns]':
+                df['date'] = pd.to_datetime(df['date'], errors='coerce')
+                working_df['date'] = pd.to_datetime(working_df['date'], errors='coerce')
             
-            date_range = st.date_input(
-                "Date Range",
-                value=(min_date, max_date),
-                min_value=min_date,
-                max_value=max_date
-            )
-            if len(date_range) == 2:
-                date_from, date_to = date_range
-                working_df = working_df[
-                    (working_df['date'].dt.date >= date_from) & 
-                    (working_df['date'].dt.date <= date_to)
-                ]
+            # Get valid date range (exclude NaT values)
+            valid_dates = df['date'].dropna()
+            if not valid_dates.empty:
+                min_date = valid_dates.min().date()
+                max_date = valid_dates.max().date()
+                
+                date_range = st.date_input(
+                    "Date Range",
+                    value=(min_date, max_date),
+                    min_value=min_date,
+                    max_value=max_date
+                )
+                if len(date_range) == 2:
+                    date_from, date_to = date_range
+                    working_df = working_df[
+                        (working_df['date'].dt.date >= date_from) & 
+                        (working_df['date'].dt.date <= date_to)
+                    ]
+                else:
+                    date_from, date_to = None, None
             else:
                 date_from, date_to = None, None
         else:
