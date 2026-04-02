@@ -8,6 +8,7 @@ import boto3
 from botocore.exceptions import NoCredentialsError
 import zipfile
 import os
+import time
 
 # Set your custom password here
 APP_PASSWORD = st.secrets["auth"]["password"]
@@ -133,6 +134,49 @@ if 'df' not in st.session_state:
 
 df = st.session_state.df
 
+# Initialize title_components early so it's available to batch section
+if 'title_components' not in st.session_state:
+    st.session_state.title_components = ['title', 'filters']
+title_components = st.session_state.title_components
+
+# ===== INITIALIZE FILTER SESSION STATE (before batch section) =====
+# This prevents filters from being overwritten when main app logic reruns
+if 'filter_competition' not in st.session_state:
+    st.session_state['filter_competition'] = None
+if 'filter_team_bat' not in st.session_state:
+    st.session_state['filter_team_bat'] = None
+if 'filter_team_bowl' not in st.session_state:
+    st.session_state['filter_team_bowl'] = None
+if 'filter_inns' not in st.session_state:
+    st.session_state['filter_inns'] = None
+if 'filter_match' not in st.session_state:
+    st.session_state['filter_match'] = None
+if 'filter_bowler' not in st.session_state:
+    st.session_state['filter_bowler'] = None
+if 'filter_bowler_id' not in st.session_state:
+    st.session_state['filter_bowler_id'] = None
+if 'filter_bat_hand' not in st.session_state:
+    st.session_state['filter_bat_hand'] = []
+if 'filter_mcode' not in st.session_state:
+    st.session_state['filter_mcode'] = None
+if 'filter_ground' not in st.session_state:
+    st.session_state['filter_ground'] = None
+if 'filter_bowl_type' not in st.session_state:
+    st.session_state['filter_bowl_type'] = None
+if 'filter_bowl_kind' not in st.session_state:
+    st.session_state['filter_bowl_kind'] = None
+if 'filter_bowl_arm' not in st.session_state:
+    st.session_state['filter_bowl_arm'] = None
+if 'filter_over_values' not in st.session_state:
+    st.session_state['filter_over_values'] = None
+if 'filter_phase' not in st.session_state:
+    st.session_state['filter_phase'] = None
+if 'filter_phase_display' not in st.session_state:
+    st.session_state['filter_phase_display'] = []
+if 'date_range_filter' not in st.session_state:
+    st.session_state['date_range_filter'] = (None, None)
+
+
 if data_source == "Upload Data File":
     uploaded_file = st.sidebar.file_uploader("Upload CSV File", type=["csv"])
     if uploaded_file:
@@ -219,7 +263,7 @@ elif data_source == "S3_all":
 elif data_source == "Cache_all":
     local_file_path = st.sidebar.text_input(
         "Enter local file path:",
-        value="../data/daily_updated_t20_data/t20_bbb.csv"
+        value="E:/Cricket Related Projects/HG-Datasets/t20_bbb.csv"
     )
     
     if st.sidebar.button("Load from Local Storage", key="load_local_complete"):
@@ -242,7 +286,7 @@ elif data_source == "Cache_all":
 elif data_source == "Cache_since24":
     local_file_path = st.sidebar.text_input(
         "Enter local file path:",
-        value="../data/daily_updated_t20_data/t20_bbb_since_2024.csv"
+        value="E:/Cricket Related Projects/HG-Datasets/t20_bbb_since_2024.csv"
     )
     
     if st.sidebar.button("Load from Local Storage", key="load_local_complete"):
@@ -306,23 +350,41 @@ if st.session_state.df is not None:
     #     key="squad_upload"
     # )
     
-    # squad_file = "data//2026-WT20-Squads.xlsx"
-    # squad_file = "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx"
+    # # List of possible file paths (in order of preference)
+    # possible_paths = [
+    #     "data/S2026_PSL.xlsx",
+    #     "data/S2026_IPL.xlsx",
+    #     "../data/daily_updated_t20_data/S2026_PSL.xlsx",
+    # ]
 
-    
+    # squad_file = None
+    # for path in possible_paths:
+    #     if os.path.exists(path):
+    #         squad_file = path
+    #         break
+
+    # New Dropdown option
     # List of possible file paths (in order of preference)
     possible_paths = [
-        "../data/daily_updated_t20_data/2026-PSL-Squads.xlsx",
-        "../data/daily_updated_t20_data/S2026_PSL.xlsx",
-        "../data/daily_updated_t20_data/2026-WT20-Squads.xlsx",
-        "data/2026-PSL-Squads.xlsx"
-    ] 
+        "data/S2026_PSL.xlsx",
+        "data/S2026_IPL.xlsx",
+    ]
 
-    squad_file = None
-    for path in possible_paths:
-        if os.path.exists(path):
-            squad_file = path
-            break
+    # Find which files actually exist
+    existing_squad_files = [path for path in possible_paths if os.path.exists(path)]
+
+    if existing_squad_files:
+        # Show dropdown to let user select
+        selected_squad_path = st.sidebar.selectbox(
+            "Select Squad File:",
+            existing_squad_files,
+            help="Choose which squad file to use for batch generation"
+        )
+        squad_file = selected_squad_path
+        st.sidebar.success(f"✓ Selected: {squad_file}")
+    else:
+        st.sidebar.error("⚠️ No squad files found!")
+        squad_file = None
 
     if squad_file:
         # Read squad file
@@ -351,7 +413,8 @@ if st.session_state.df is not None:
                     # Plot type selection
                     batch_plot_types = st.sidebar.multiselect(
                         "Select plots to generate:",
-                    ["Spike Plot Plot", "Spike Plot Descriptive", "Wagon Zone Plot", "Wagon Zone Descriptive", "Dismissal Plot"],
+                    ["Wagon Wheel","Wagon Zone", "Dismissal Plot"],
+                    # ["Wagon Wheel R", "Wagon Wheel", "Wagon Zone R", "Wagon Zone", "Dismissal Plot"],
                     )
                     
                     # Transparent option
@@ -370,7 +433,19 @@ if st.session_state.df is not None:
                     )
                     
                     # Generate button
-                    if st.sidebar.button("🚀 Generate Batch Plots", type="primary", key="batch_generate_btn"):
+                    col_gen, col_term = st.sidebar.columns(2)
+                    with col_gen:
+                        generate_batch = st.button("🚀 Generate Batch Plots", type="primary", key="batch_generate_btn", use_container_width=True)
+                    with col_term:
+                        clear_batch = st.button("🛑 Clear Job", key="batch_clear_btn", use_container_width=True)
+                    
+                    # Handle clear batch button
+                    if clear_batch:
+                        st.session_state['batch_job_cleared'] = True
+                        st.sidebar.info("✓ Batch job cleared. You can start a new one.")
+                        st.rerun()
+                    
+                    if generate_batch:
                         if batch_plot_types:
                             # Ensure date column is datetime format
                             if 'date' in df.columns and df['date'].dtype == 'object':
@@ -409,23 +484,50 @@ if st.session_state.df is not None:
                                     # Set filters - get values from session state if apply_filters is checked
                                     if apply_filters_to_batch:
                                         # Get filter values from session state (these are set in main app)
-                                        filter_comp = st.session_state.get('filter_competition', 'All')
-                                        filter_comp_val = None if filter_comp == "All" else filter_comp
+                                        filter_comp = st.session_state.get('filter_competition', None)
+                                        filter_comp_val = filter_comp
                                         
-                                        filter_team_bat = st.session_state.get('filter_team_bat', 'All')
-                                        filter_team_bat_val = None if filter_team_bat == "All" else filter_team_bat
+                                        filter_team_bat = st.session_state.get('filter_team_bat', None)
+                                        filter_team_bat_val = filter_team_bat
                                         
-                                        filter_team_bowl = st.session_state.get('filter_team_bowl', 'All')
-                                        filter_team_bowl_val = None if filter_team_bowl == "All" else filter_team_bowl
+                                        filter_team_bowl = st.session_state.get('filter_team_bowl', None)
+                                        filter_team_bowl_val = filter_team_bowl
                                         
-                                        filter_inns = st.session_state.get('filter_inns', 'All')
-                                        filter_inns_val = None if filter_inns == "All" else int(filter_inns)
+                                        filter_inns = st.session_state.get('filter_inns', None)
+                                        filter_inns_val = filter_inns if filter_inns else None
                                         
-                                        filter_match = st.session_state.get('filter_match', 'All')
-                                        filter_match_val = None if filter_match == "All" else int(filter_match)
+                                        filter_match = st.session_state.get('filter_match', None)
+                                        filter_match_val = filter_match if filter_match else None
                                         
-                                        filter_bowler = st.session_state.get('filter_bowler', 'All')
-                                        filter_bowler_val = None if filter_bowler == "All" else filter_bowler
+                                        filter_bowler = st.session_state.get('filter_bowler', None)
+                                        filter_bowler_val = filter_bowler
+                                        
+                                        filter_bowler_id = st.session_state.get('filter_bowler_id', None)
+                                        filter_bowler_id_val = filter_bowler_id
+                                        
+                                        filter_bat_hand = st.session_state.get('filter_bat_hand', [])
+                                        filter_bat_hand_val = filter_bat_hand if filter_bat_hand else None
+                                        
+                                        filter_mcode = st.session_state.get('filter_mcode', [])
+                                        filter_mcode_val = filter_mcode if filter_mcode else None
+                                        
+                                        filter_ground = st.session_state.get('filter_ground', [])
+                                        filter_ground_val = filter_ground if filter_ground else None
+                                        
+                                        filter_bowl_type = st.session_state.get('filter_bowl_type', [])
+                                        filter_bowl_type_val = filter_bowl_type if filter_bowl_type else None
+                                        
+                                        filter_bowl_kind = st.session_state.get('filter_bowl_kind', [])
+                                        filter_bowl_kind_val = filter_bowl_kind if filter_bowl_kind else None
+                                        
+                                        filter_bowl_arm = st.session_state.get('filter_bowl_arm', [])
+                                        filter_bowl_arm_val = filter_bowl_arm if filter_bowl_arm else None
+                                        
+                                        filter_over_values = st.session_state.get('filter_over_values', [])
+                                        filter_over_values_val = filter_over_values if filter_over_values else None
+                                        
+                                        filter_phase = st.session_state.get('filter_phase', [])
+                                        filter_phase_val = filter_phase if filter_phase else None
                                         
                                         # Get date range from session state and convert to datetime
                                         date_range_state = st.session_state.get('date_range_filter', None)
@@ -445,10 +547,17 @@ if st.session_state.df is not None:
                                             'team_bat': filter_team_bat_val,
                                             'team_bowl': filter_team_bowl_val,
                                             'bowler_name': filter_bowler_val,
-                                            'bowler_id': None,
+                                            'bowler_id': filter_bowler_id_val,
+                                            'bat_hand': filter_bat_hand_val,
+                                            'mcode': filter_mcode_val,
+                                            'ground': filter_ground_val,
+                                            'bowl_type': filter_bowl_type_val,
+                                            'bowl_kind': filter_bowl_kind_val,
+                                            'bowl_arm': filter_bowl_arm_val,
                                             'run_values': None,
-                                            'over_values': None,
-                                            'phase': None,
+                                            'over_values': filter_over_values_val,
+                                            'phase': filter_phase_val,
+                                            'title_components': title_components,
                                             'transparent': batch_transparent,
                                             'show_title': True,
                                             'show_summary': True,
@@ -476,9 +585,16 @@ if st.session_state.df is not None:
                                             'team_bowl': None,
                                             'bowler_name': None,
                                             'bowler_id': None,
+                                            'bat_hand': None,
+                                            'mcode': None,
+                                            'ground': None,
+                                            'bowl_type': None,
+                                            'bowl_kind': None,
+                                            'bowl_arm': None,
                                             'run_values': None,
                                             'over_values': None,
                                             'phase': None,
+                                            'title_components': title_components,
                                             'transparent': batch_transparent,
                                             'show_title': True,
                                             'show_summary': True,
@@ -493,26 +609,26 @@ if st.session_state.df is not None:
                                             'show_phase': True,
                                             'show_bowl_type': True,
                                             'show_bowl_kind': True,
-                                            'show_bowl_arm': True                                     
+                                            'show_bowl_arm': True,
                                         }
                                     
                                     # Generate selected plots
                                     try:
-                                        if "Spike Plot Plot" in batch_plot_types:
+                                        if "Wagon Wheel R" in batch_plot_types:
                                             spike_filters = {k: v for k, v in batch_filters.items()}
                                             fig = spike_plot_custom(df=df, pid=pid, player_name=None, **spike_filters)
                                             if fig is not None:
-                                                all_batch_figures[f"{player_name}_spike_graph_plot.png"] = fig
+                                                all_batch_figures[f"{player_name}_wagon_wheel.png"] = fig
                                                 success_count += 1
                                         
-                                        if "Spike Plot Descriptive" in batch_plot_types:
+                                        if "Wagon Wheel" in batch_plot_types:
                                             spike_filters = {k: v for k, v in batch_filters.items()}
                                             fig = spike_graph_plot_descriptive(df=df, pid=pid, player_name=None, **spike_filters)
                                             if fig is not None:
-                                                all_batch_figures[f"{player_name}_spike_graph_desc.png"] = fig
+                                                all_batch_figures[f"{player_name}_wagon_wheel_desc.png"] = fig
                                                 success_count += 1
                                         
-                                        if "Wagon Zone Plot" in batch_plot_types:
+                                        if "Wagon Zone R" in batch_plot_types:
                                             # Wagon plots don't have show_legend or show_ground parameters
                                             wagon_filters = {k: v for k, v in batch_filters.items() if k not in ['show_legend', 'show_ground']}
                                             fig = wagon_zone_plot(df=df, pid=pid, player_name=None, **wagon_filters)
@@ -520,7 +636,7 @@ if st.session_state.df is not None:
                                                 all_batch_figures[f"{player_name}_wagon_zone_plot.png"] = fig
                                                 success_count += 1
                                         
-                                        if "Wagon Zone Descriptive" in batch_plot_types:
+                                        if "Wagon Zone" in batch_plot_types:
                                             # Wagon plots don't have show_legend or show_ground parameters
                                             wagon_filters = {k: v for k, v in batch_filters.items() if k not in ['show_legend', 'show_ground']}
                                             fig = wagon_zone_plot_descriptive(df=df, pid=pid, player_name=None, **wagon_filters)
@@ -529,8 +645,9 @@ if st.session_state.df is not None:
                                                 success_count += 1
                                         
                                         if "Dismissal Plot" in batch_plot_types:
-                                            # Dismissal plots have all parameters like spike plots
-                                            dismissal_filters = {k: v for k, v in batch_filters.items()}
+                                            # Dismissal plots don't have run_values or show_legend parameters
+                                            # dismissal_filters = {k: v for k, v in batch_filters.items()}
+                                            dismissal_filters = {k: v for k, v in batch_filters.items() if k not in ['run_values', 'show_legend']}
                                             fig = dismissal_plot(df=df, pid=pid, player_name=None, **dismissal_filters)
                                             if fig is not None:
                                                 all_batch_figures[f"{player_name}_dismissal_plot.png"] = fig
@@ -542,6 +659,10 @@ if st.session_state.df is not None:
                                     except Exception as e:
                                         error_count += 1
                                         st.sidebar.warning(f"⚠️ {player_name}: {str(e)[:100]}")
+                                    
+                                    # Add delay between players (2.5 seconds)
+                                    if idx < len(team_pids) - 1:  # Don't delay after last player
+                                        time.sleep(2.5)
                                 
                                 progress_bar.empty()
                                 status_text.empty()
@@ -663,7 +784,7 @@ if df is not None:
         title_components = st.multiselect(
             "Title Components",
             options=['title', 'filters'],
-            default=['title', 'filters'],
+            default=['title'],
             help="'title' = Player vs Team | 'filters' = Competition, Match#, Innings. Applies to all plots."
         )
         
@@ -903,6 +1024,25 @@ if df is not None:
         else:
             selected_ground = None
     
+    # ===== UPDATE FILTER SESSION STATE AT END OF FILTER SECTION =====
+    # Update with actual filter values so batch section reads latest values
+    st.session_state['filter_competition'] = selected_competition_value
+    st.session_state['filter_team_bat'] = selected_team_value
+    st.session_state['filter_team_bowl'] = selected_team_bowl_value
+    st.session_state['filter_inns'] = selected_inns
+    st.session_state['filter_match'] = selected_mat_num
+    st.session_state['filter_bowler'] = bowler_name
+    st.session_state['filter_bowler_id'] = bowler_id
+    st.session_state['filter_bat_hand'] = bat_hand
+    st.session_state['filter_mcode'] = selected_mcode
+    st.session_state['filter_ground'] = selected_ground
+    st.session_state['filter_bowl_type'] = bowl_type
+    st.session_state['filter_bowl_kind'] = bowl_kind
+    st.session_state['filter_bowl_arm'] = bowl_arm
+    st.session_state['filter_over_values'] = over_values
+    st.session_state['filter_phase'] = phase
+    st.session_state['date_range_filter'] = (date_from, date_to) if 'date_from' in locals() else (None, None)
+    
     # ===== DATA VALIDATION ====
     st.markdown("---")
     
@@ -919,24 +1059,24 @@ if df is not None:
     plot_types = st.multiselect(
         "Choose plot(s):",
         [
-            "Spike Plot (White Background)",
-            "Spike Plot (Transparent Background)",
-            "Spike Plot Descriptive",
-            "Spike Plot Descriptive (Transparent)",
-            "Wagon Zone Plot (White Background)",
-            "Wagon Zone Plot (Transparent Background)",
+            "Wagon Wheel (White Bg)",
+            "Wagon Wheel (Transparent Bg)",
+            "Wagon Wheel Descriptive",
+            "Wagon Wheel Descriptive (Trans)",
+            "Wagon Zone Plot (White Bg)",
+            "Wagon Zone Plot (Transparent Bg)",
             "Wagon Zone Descriptive",
-            "Wagon Zone Descriptive (Transparent)",
-            "Dismissal Plot (White Background)",
-            "Dismissal Plot (Transparent Background)"
+            "Wagon Zone Descriptive (Trans)",
+            "Dismissal Plot (White Bg)",
+            "Dismissal Plot (Transparent Bg)"
         ]
     )
 
     fig_spike, fig_wagon, fig_spike_trans, fig_wagon_trans, fig_spike_desc, fig_wagon_desc, fig_spike_desc_trans, fig_wagon_desc_trans, fig_dismissal, fig_dismissal_trans = None, None, None, None, None, None, None, None, None, None
 
     if plot_types:
-        if "Spike Plot (White Background)" in plot_types:
-            st.markdown("<h2 style='text-align: center;'>Spike Plot (White Background)</h2>", unsafe_allow_html=True)
+        if "Wagon Wheel (White Bg)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Wagon Wheel (White Bg)</h2>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([2, 2, 2])
             
             with col1:
@@ -968,7 +1108,7 @@ if df is not None:
                 show_ground = st.checkbox("Show Ground Image", value=True)
 
             with col3:
-                st.markdown("## Run Filter (Spike Plot)")
+                st.markdown("## Run Filter (Wagon Wheel)")
 
                 if "run_init_spike" not in st.session_state:
                     st.session_state["run_all_spike"] = True
@@ -1057,8 +1197,8 @@ if df is not None:
                         key="spike_download"
                     )
 
-        if "Spike Plot (Transparent Background)" in plot_types:
-            st.markdown("<h2 style='text-align: center;'>Spike Plot (Transparent Background)</h2>", unsafe_allow_html=True)
+        if "Wagon Wheel (Transparent Bg)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Wagon Wheel (Transparent Bg)</h2>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([2, 2, 2])
             
             with col1:
@@ -1090,7 +1230,7 @@ if df is not None:
                 show_ground_trans = st.checkbox("Show Ground Image", value=True, key="spike_trans_ground")
 
             with col3:
-                st.markdown("## Run Filter (Spike Plot)")
+                st.markdown("## Run Filter (Wagon Wheel)")
 
                 if "run_init_spike_trans" not in st.session_state:
                     st.session_state["run_all_spike_trans"] = True
@@ -1179,8 +1319,8 @@ if df is not None:
                         key="spike_trans_download"
                     )
 
-        if "Spike Plot Descriptive" in plot_types:
-            st.markdown("<h2 style='text-align: center;'>Spike Plot Descriptive</h2>", unsafe_allow_html=True)
+        if "Wagon Wheel Descriptive" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Wagon Wheel Descriptive</h2>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([2, 2, 2])
             
             with col1:
@@ -1215,7 +1355,7 @@ if df is not None:
                 show_venue_desc = st.checkbox("Show Venue", value=True, key="spike_desc_venue")
 
             with col3:
-                st.markdown("## Run Filter (Spike Plot)")
+                st.markdown("## Run Filter (Wagon Wheel)")
 
                 if "run_init_spike_desc" not in st.session_state:
                     st.session_state.run_init_spike_desc = True
@@ -1306,8 +1446,8 @@ if df is not None:
                         key="spike_desc_download"
                     )
 
-        if "Spike Plot Descriptive (Transparent)" in plot_types:
-            st.markdown("<h2 style='text-align: center;'>Spike Plot Descriptive (Transparent)</h2>", unsafe_allow_html=True)
+        if "Wagon Wheel Descriptive (Trans)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Wagon Wheel Descriptive (Trans)</h2>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([2, 2, 2])
             
             with col1:
@@ -1342,7 +1482,7 @@ if df is not None:
                 show_venue_desc_trans = st.checkbox("Show Venue", value=True, key="spike_desc_trans_venue")
 
             with col3:
-                st.markdown("## Run Filter (Spike Plot)")
+                st.markdown("## Run Filter (Wagon Wheel)")
 
                 if "run_init_spike_desc_trans" not in st.session_state:
                     st.session_state.run_init_spike_desc_trans = True
@@ -1433,8 +1573,8 @@ if df is not None:
                         key="spike_desc_trans_download"
                     )
 
-        if "Wagon Zone Plot (White Background)" in plot_types:
-            st.markdown("<h2 style='text-align: center;'>Wagon Zone Plot (White Background)</h2>", unsafe_allow_html=True)
+        if "Wagon Zone Plot (White Bg)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Wagon Zone Plot (White Bg)</h2>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([2, 2, 2])
             
             with col1:
@@ -1548,8 +1688,8 @@ if df is not None:
                         key="wagon_download"
                     )
 
-        if "Wagon Zone Plot (Transparent Background)" in plot_types:
-            st.markdown("<h2 style='text-align: center;'>Wagon Zone Plot (Transparent Background)</h2>", unsafe_allow_html=True)
+        if "Wagon Zone Plot (Transparent Bg)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Wagon Zone Plot (Transparent Bg)</h2>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([2, 2, 2])
             
             with col1:
@@ -1787,8 +1927,8 @@ if df is not None:
                         key="wagon_desc_download"
                     )
 
-        if "Wagon Zone Descriptive (Transparent)" in plot_types:
-            st.markdown("<h2 style='text-align: center;'>Wagon Zone Descriptive (Transparent)</h2>", unsafe_allow_html=True)
+        if "Wagon Zone Descriptive (Trans)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Wagon Zone Descriptive (Trans)</h2>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([2, 2, 2])
             
             with col1:
@@ -1910,8 +2050,8 @@ if df is not None:
                         key="wagon_desc_trans_download"
                     )
 
-        if "Dismissal Plot (White Background)" in plot_types:
-            st.markdown("<h2 style='text-align: center;'>Dismissal Plot (White Background)</h2>", unsafe_allow_html=True)
+        if "Dismissal Plot (White Bg)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Dismissal Plot (White Bg)</h2>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([2, 2, 2])
             
             with col1:
@@ -2006,8 +2146,8 @@ if df is not None:
                         key="dismissal_download"
                     )
 
-        if "Dismissal Plot (Transparent Background)" in plot_types:
-            st.markdown("<h2 style='text-align: center;'>Dismissal Plot (Transparent Background)</h2>", unsafe_allow_html=True)
+        if "Dismissal Plot (Transparent Bg)" in plot_types:
+            st.markdown("<h2 style='text-align: center;'>Dismissal Plot (Transparent Bg)</h2>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([2, 2, 2])
             
             with col1:
@@ -2082,7 +2222,7 @@ if df is not None:
                     show_bowl_arm=show_bowl_arm_dismissal_trans
                 )
             except Exception as e:
-                st.error(f"Error generating dismissal plot (transparent): {str(e)}")
+                st.error(f"Error generating dismissal plot (Trans): {str(e)}")
                 fig_dismissal_trans = None
             
             with col2:
