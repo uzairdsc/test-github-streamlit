@@ -10,24 +10,24 @@ import matplotlib.image as mpimg
 #  dismissal plot
 def dismissal_plot(
     df, player_name=None, pid=None, inns=None, mat_num = None, team_bat=None, team_bowl=None,
-    run_values=None, bowler_name=None, competition=None, date_from=None, date_to=None,
+    bowler_name=None, competition=None, date_from=None, date_to=None,
     transparent=False, over_values=None, phase=None, bowler_id=None, ground=None, mcode=None,
     title_components=["title", "filters"], shots_breakdown_options=['0s', '1s', '2s', '3s', '4s', '6s'],
     bat_hand=None , bowl_type=None, bowl_kind=None, bowl_arm=None,
-    show_title=True, show_legend=True, show_summary=True, show_shots_breakdown=True,
+    show_title=True,  show_summary=True, show_shots_breakdown=True,
     show_fours_sixes=True, show_control=True, show_prod_shot=True, 
-    show_bowl_type=True, show_bowl_kind=True, show_bowl_arm=True, show_venue=True,
+    show_bowl_type=True, show_bowl_kind=True, show_bowl_arm=True, show_venue=False,
     runs_count=True, show_bowler=True, show_ground=True, show_overs=True, show_phase=True
 ):
-    score_colors = {
-        0:  "#706B6C",   
-        1:  "#FF5733",   
-        2:  '#1F51FF',   
-        3:  '#D16FBC',   
-        4:  '#0B9B67',
-        5:  '#FFA500',   
-        6:  '#7A41D8',   
-    }
+    # score_colors = {
+    #     0:  "#706B6C",   
+    #     1:  "#FF5733",   
+    #     2:  '#1F51FF',   
+    #     3:  '#D16FBC',   
+    #     4:  '#0B9B67',
+    #     5:  '#FFA500',   
+    #     6:  '#7A41D8',   
+    # }
 
     local_df = df.copy()
 
@@ -114,8 +114,10 @@ def dismissal_plot(
         local_df = local_df[local_df['ground'].isin(ground)]
 
 
-    if bat_hand is not None:
-        local_df = local_df[local_df['bat_hand'] == bat_hand]
+    # if bat_hand is not None:
+    #     local_df = local_df[local_df['bat_hand'] == bat_hand]
+    if bat_hand is not None and len(bat_hand) > 0:
+        local_df = local_df[local_df['bat_hand'].isin(bat_hand)]
 
     # if bowl_type is not None:
     #     local_df = local_df[local_df['bowl_type'] == bowl_type]
@@ -148,25 +150,6 @@ def dismissal_plot(
     # innings_valid_balls = local_df[local_df['wides'] == 0]
     # innings_runs = innings_valid_balls['batsmanRuns'].sum()
     # innings_balls = innings_valid_balls.shape[0]
-    innings_valid_balls = local_df[local_df['wide'] == 0]
-
-    if player_name is None:
-        innings_runs = innings_valid_balls['score'].sum()
-    else:
-        innings_runs = innings_valid_balls['batruns'].sum()
-
-    innings_balls = innings_valid_balls.shape[0]
-    
-    # innings_4s = innings_valid_balls['isFour'].sum()
-    # innings_6s = innings_valid_balls['isSix'].sum()
-    
-    innings_4s = (innings_valid_balls['outcome'] == 'four').sum()
-    innings_6s = (innings_valid_balls['outcome'] == 'six').sum()
-
-    innings_0s = (innings_valid_balls['batruns'] == 0).sum()
-    innings_1s = (innings_valid_balls['batruns'] == 1).sum()
-    innings_2s = (innings_valid_balls['batruns'] == 2).sum()
-    innings_3s = (innings_valid_balls['batruns'] == 3).sum()
 
 
     if bowler_id is not None:
@@ -181,7 +164,34 @@ def dismissal_plot(
     if bowler_name:
         local_df = local_df[local_df['bowl'] == bowler_name]
 
-  
+    # innings_valid_balls = local_df[local_df['wide'] == 0]
+
+    # if player_name is None:
+    #     innings_runs = innings_valid_balls['score'].sum()
+    # else:
+    #     innings_runs = innings_valid_balls['batruns'].sum()
+
+    # innings_balls = innings_valid_balls.shape[0]
+    if player_name is None:
+        innings_valid_balls = local_df.copy()  # include all for team
+        innings_runs = innings_valid_balls['score'].sum() #score
+    else:
+        innings_valid_balls = local_df[local_df['wide'] == 0]
+        innings_runs = innings_valid_balls['batruns'].sum() #batruns
+
+    innings_balls = innings_valid_balls.shape[0]
+    
+    # innings_4s = innings_valid_balls['isFour'].sum()
+    # innings_6s = innings_valid_balls['isSix'].sum()
+    
+    innings_4s = (innings_valid_balls['outcome'] == 'four').sum()
+    innings_6s = (innings_valid_balls['outcome'] == 'six').sum()
+
+    innings_0s = (innings_valid_balls['batruns'] == 0).sum()
+    innings_1s = (innings_valid_balls['batruns'] == 1).sum()
+    innings_2s = (innings_valid_balls['batruns'] == 2).sum()
+    innings_3s = (innings_valid_balls['batruns'] == 3).sum()
+    
     # Get unique batting teams
     batting_teams = local_df['team_bat'].dropna().unique()
     all_teams = pd.concat([local_df['team_bat'], local_df['team_bowl']]).dropna().unique()
@@ -301,14 +311,14 @@ def dismissal_plot(
     # else:
     #     player_data_sorted = player_data.sort_values(by='batsmanRuns')
     #     player_data['color'] = player_data['batsmanRuns'].map(score_colors).fillna('black')
-    if player_name is None:
-        innings_valid_balls = local_df.copy()  # include all for team
-        innings_runs = innings_valid_balls['score'].sum()
-    else:
-        innings_valid_balls = local_df[local_df['wide'] == 0]
-        innings_runs = innings_valid_balls['batruns'].sum()
+    # if player_name is None:
+    #     innings_valid_balls = local_df.copy()  # include all for team
+    #     innings_runs = innings_valid_balls['score'].sum()
+    # else:
+    #     innings_valid_balls = local_df[local_df['wide'] == 0]
+    #     innings_runs = innings_valid_balls['batruns'].sum()
 
-    innings_balls = innings_valid_balls[innings_valid_balls['wide'] == 0].shape[0]  # consistent valid balls
+    # innings_balls = innings_valid_balls[innings_valid_balls['wide'] == 0].shape[0]  # consistent valid balls
 
 
 
@@ -318,13 +328,19 @@ def dismissal_plot(
         valid_balls = local_df[local_df['wide'] == 0]
         valid_shots = valid_balls[~((valid_balls['wagonX'] == 0) & (valid_balls['wagonY'] == 0))]
         # ADD THESE TWO LINES:
+
+        #testing lines
+        valid_shots = valid_shots.copy()
+
         valid_shots['isFour'] = (valid_shots['outcome'] == 'four').astype(int)
         valid_shots['isSix'] = (valid_shots['outcome'] == 'six').astype(int)
 
         total_score = valid_shots['score'].sum()
         total_4s = valid_shots['isFour'].sum()
         total_6s = valid_shots['isSix'].sum()
+        
         balls_faced = valid_balls.shape[0]
+
     else:
         # Player-level stats (exclude wides + keep only player's shots)
         valid_balls = local_df[(local_df['wide'] == 0) & (~local_df['control'].isna())]
@@ -336,16 +352,25 @@ def dismissal_plot(
         total_score = valid_shots['batruns'].sum()
         total_4s = valid_shots['isFour'].sum()
         total_6s = valid_shots['isSix'].sum()
+        # balls_faced = balls_faced_df.shape[0]
+
+        balls_faced_df = valid_balls
         balls_faced = balls_faced_df.shape[0]
 
-    # if len(valid_balls) == 0:
-    #     control_pct = 0.0
-    # else:
-    #     controlled_balls = valid_balls[valid_balls['shotControl'] == 1]
-    #     control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2)
+    if len(valid_balls) == 0:
+        control_pct = 0.0
+    else:
+        # Convert mixed-type control column to numeric FIRST
+        control_numeric = pd.to_numeric(valid_balls['control'], errors='coerce')
+        # Now count all 1.0 values (regardless of original type)
+        controlled = (control_numeric == 1).sum()
+        control_pct = round(controlled / len(valid_balls) * 100, 2)
+        # controlled_balls = valid_balls[valid_balls['shotControl'] == 1]
+        # control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2)
 
-    controlled_balls = valid_balls[valid_balls['control'] ==1]
-    control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2)
+
+    # controlled_balls = valid_balls[valid_balls['control'] ==1]
+    # control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2)
     # valid_balls = df[
     #     (df['batsmanName'] == player_name) &
     #     (df['inningNumber'] == inns) &
@@ -501,7 +526,7 @@ def dismissal_plot(
         )
     else:
         # print("DEBUG: player_data_sorted is EMPTY - showing error message")
-        ax.text(180, 200, "No dismissals for selected filters", ha='center', fontsize=12, color='red', fontweight='bold')
+        ax.text(180, 390, "No dismissals for selected filter(s)", ha='center', fontsize=12, color='red', fontweight='bold')
 
     # plot the point (dot) at batter position which is at 180, 164, not rectangle only dot
     #batter position dot

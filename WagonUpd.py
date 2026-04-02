@@ -43,17 +43,17 @@ def wagon_zone_plot(
     if inns is not None and len(inns) > 0:
         local_df = local_df[local_df['inns'].isin(inns)]
 
-    if bowler_id is not None:
-        local_df = local_df[local_df['p_bowl'] == bowler_id]
+    # if bowler_id is not None:
+    #     local_df = local_df[local_df['p_bowl'] == bowler_id]
 
-        if not local_df.empty and bowler_name is None:
-            bowler_name = local_df['bowl'].iloc[0]
-    # Otherwise filter by bowler name
-    elif bowler_name is not None:
-        local_df = local_df[local_df['bowl'] == bowler_name]
+    #     if not local_df.empty and bowler_name is None:
+    #         bowler_name = local_df['bowl'].iloc[0]
+    # # Otherwise filter by bowler name
+    # elif bowler_name is not None:
+    #     local_df = local_df[local_df['bowl'] == bowler_name]
 
-    if bowler_name:
-        local_df = local_df[local_df['bowl'] == bowler_name] #bowl
+    # if bowler_name:
+    #     local_df = local_df[local_df['bowl'] == bowler_name] #bowl
 
     if run_values is not None:
         local_df = local_df[local_df['batruns'].isin(run_values)] #batruns
@@ -111,6 +111,12 @@ def wagon_zone_plot(
     if date_to is not None:
         local_df = local_df[local_df['date'] <= pd.to_datetime(date_to)]
 
+    # if player_name is None:
+    #     innings_valid_balls = local_df.copy()  # include all for team
+    #     innings_runs = innings_valid_balls['score'].sum() #score
+    # else:
+    #     innings_valid_balls = local_df[local_df['wide'] == 0]
+    #     innings_runs = innings_valid_balls['batruns'].sum() #batruns
 
     #ground filter
     # if ground is not None:
@@ -120,8 +126,8 @@ def wagon_zone_plot(
         local_df = local_df[local_df['ground'].isin(ground)]
 
 
-    if bat_hand is not None:
-        local_df = local_df[local_df['bat_hand'] == bat_hand]
+    if bat_hand is not None and len(bat_hand) > 0:
+        local_df = local_df[local_df['bat_hand'].isin(bat_hand)]
 
     # updated change of multiselect
     if bowl_type is not None and len(bowl_type) > 0:
@@ -141,7 +147,21 @@ def wagon_zone_plot(
         innings_valid_balls = local_df[local_df['wide'] == 0]
         innings_runs = innings_valid_balls['batruns'].sum() #batruns
 
-    innings_balls = innings_valid_balls[innings_valid_balls['wide'] == 0].shape[0]  # consistent valid balls
+    innings_balls = innings_valid_balls.shape[0]
+
+    if bowler_id is not None:
+        local_df = local_df[local_df['p_bowl'] == bowler_id]
+
+        if not local_df.empty and bowler_name is None:
+            bowler_name = local_df['bowl'].iloc[0]
+    # Otherwise filter by bowler name
+    elif bowler_name is not None:
+        local_df = local_df[local_df['bowl'] == bowler_name]
+
+    if bowler_name:
+        local_df = local_df[local_df['bowl'] == bowler_name] #bowl
+
+    # innings_balls = innings_valid_balls[innings_valid_balls['wide'] == 0].shape[0]  # consistent valid balls
 
     # --- Core Filtering Logic (Team vs Player Mode) ---
     if player_name is None:
@@ -159,10 +179,10 @@ def wagon_zone_plot(
         total_4s = (valid_shots['outcome'] == 'four').sum()
         total_6s = (valid_shots['outcome'] == 'six').sum()
 
-        total_0s = (valid_shots['batruns'] == 0).sum()
-        total_1s = (valid_shots['batruns'] == 1).sum()
-        total_2s = (valid_shots['batruns'] == 2).sum()
-        total_3s = (valid_shots['batruns'] == 3).sum()
+        total_0s = (innings_valid_balls['batruns'] == 0).sum()
+        total_1s = (innings_valid_balls['batruns'] == 1).sum()
+        total_2s = (innings_valid_balls['batruns'] == 2).sum()
+        total_3s = (innings_valid_balls['batruns'] == 3).sum()
 
         balls_faced = valid_balls.shape[0]
 
@@ -171,8 +191,17 @@ def wagon_zone_plot(
         # )#shotControl to control
 
         # Control calculation like spike graph
-        controlled_balls = valid_balls[valid_balls['control'] == 1]
-        control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2) if len(valid_balls) > 0 else 0.0
+        # controlled_balls = valid_balls[valid_balls['control'] == 1]
+        # control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2) if len(valid_balls) > 0 else 0.0
+
+        if len(valid_balls) == 0:
+            control_pct = 0.0
+        else:
+            # Convert mixed-type control column to numeric FIRST
+            control_numeric = pd.to_numeric(valid_balls['control'], errors='coerce')
+            # Now count all 1.0 values (regardless of original type)
+            controlled = (control_numeric == 1).sum()
+            control_pct = round(controlled / len(valid_balls) * 100, 2)
 
         
 
@@ -187,6 +216,13 @@ def wagon_zone_plot(
             ~((local_df['wagonX'] == 0) & (local_df['wagonY'] == 0))
         ].dropna(subset=['wagonX', 'wagonY'])
 
+        # ✅ ADD: Filter valid_shots the same way - exclude wides AND control nulls
+        # valid_shots = local_df[
+        #     (local_df['wide'] == 0) & 
+        #     ~((local_df['wagonX'] == 0) & (local_df['wagonY'] == 0)) &
+        #     (~local_df['control'].isna())  # ← ADD THIS
+        # ].dropna(subset=['wagonX', 'wagonY'])
+
         # ADD THESE TWO LINES:
         valid_shots['isFour'] = (valid_shots['outcome'] == 'four').astype(int)
         valid_shots['isSix'] = (valid_shots['outcome'] == 'six').astype(int)
@@ -197,10 +233,10 @@ def wagon_zone_plot(
         total_4s = (valid_shots['outcome'] == 'four').sum()
         total_6s = (valid_shots['outcome'] == 'six').sum()
 
-        total_0s = (valid_shots['batruns'] == 0).sum()
-        total_1s = (valid_shots['batruns'] == 1).sum()
-        total_2s = (valid_shots['batruns'] == 2).sum()
-        total_3s = (valid_shots['batruns'] == 3).sum()
+        total_0s = (innings_valid_balls['batruns'] == 0).sum()
+        total_1s = (innings_valid_balls['batruns'] == 1).sum()
+        total_2s = (innings_valid_balls['batruns'] == 2).sum()
+        total_3s = (innings_valid_balls['batruns'] == 3).sum()
         
         balls_faced = valid_balls.shape[0]
 
@@ -209,8 +245,16 @@ def wagon_zone_plot(
         # ) #shotControl to control
         
         #  Control calculation like spike graph
-        controlled_balls = valid_balls[valid_balls['control'] == 1]
-        control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2) if len(valid_balls) > 0 else 0.0
+        # controlled_balls = valid_balls[valid_balls['control'] == 1]
+        # control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2) if len(valid_balls) > 0 else 0.0
+        if len(valid_balls) == 0:
+            control_pct = 0.0
+        else:
+            # Convert mixed-type control column to numeric FIRST
+            control_numeric = pd.to_numeric(valid_balls['control'], errors='coerce')
+            # Now count all 1.0 values (regardless of original type)
+            controlled = (control_numeric == 1).sum()
+            control_pct = round(controlled / len(valid_balls) * 100, 2)
 
         shot_summary = valid_shots.groupby('shot').agg({ #shot
             'batruns': 'sum', #batruns
@@ -241,13 +285,14 @@ def wagon_zone_plot(
         degree = (np.degrees(angle) + 360) % 360
         return int(degree // 45)
 
-    player_data['quadrant'] = player_data.apply(lambda row: get_quadrant(row['wagonX'], row['wagonY']), axis=1)
-    # if not player_data.empty:
-    #     player_data['quadrant'] = player_data.apply(lambda row: get_quadrant(row['wagonX'], row['wagonY']), axis=1)
-    # else:
-    #     player_data['quadrant'] = pd.Series(dtype='int')
-    quadrant_totals = [player_data[player_data['quadrant'] == q][score_col].sum() for q in range(8)]
-    total_score = sum(quadrant_totals)
+    # ✅ CHECK IF DATA IS EMPTY BEFORE ASSIGNING QUADRANT
+    if not player_data.empty:
+        player_data['quadrant'] = player_data.apply(lambda row: get_quadrant(row['wagonX'], row['wagonY']), axis=1)
+        quadrant_totals = [player_data[player_data['quadrant'] == q][score_col].sum() for q in range(8)]
+        total_score = sum(quadrant_totals)
+    else:
+        quadrant_totals = [0] * 8
+        total_score = 0
 
     # Plot
     fig, ax = plt.subplots(figsize=(7, 7), facecolor='none' if transparent else 'white')
@@ -265,8 +310,8 @@ def wagon_zone_plot(
         y_end = center_y + 180 * np.sin(rad)
         ax.plot([center_x, x_end], [center_y, y_end], color='#8c8c8c', linewidth=1.3)
 
-    # Highlight Top Zones
-    top_quadrants = sorted(range(8), key=lambda i: quadrant_totals[i], reverse=True)[:2]
+    # ✅ HIGHLIGHT TOP ZONES ONLY IF THEY HAVE RUNS > 0
+    top_quadrants = [i for i in sorted(range(8), key=lambda i: quadrant_totals[i], reverse=True) if quadrant_totals[i] > 0][:2]
     rank_color = {top_quadrants[i]: 1.0 - i * 0.3 for i in range(len(top_quadrants))}
     cmap = cm.get_cmap('Blues')
 
@@ -278,9 +323,13 @@ def wagon_zone_plot(
         mid_angle = np.deg2rad(theta1 + 22.5)
         label_x = center_x + 100 * np.cos(mid_angle)
         label_y = center_y + 100 * np.sin(mid_angle)
-        ax.text(label_x, label_y, f"{quadrant_totals[i]} runs", fontsize=12,
+        ax.text(label_x, label_y, f"{quadrant_totals[i]} runs", fontsize=10.5,
                 color='black' if i in top_quadrants else '#000',
                 ha='center', va='center',fontweight = 'bold')
+
+    # ✅ ADD "NO SHOTS" MESSAGE IF DATA IS EMPTY
+    if player_data.empty:
+        ax.text(220, 410, "No shots for selected filter(s)", ha='center', fontsize=12, color='red', fontweight='bold')
 
     ax.set_xlim(-20, 470)
     ax.set_ylim(-50, 370)
@@ -417,7 +466,7 @@ def wagon_zone_plot(
 
     # Text Summary
     if show_summary:
-        ax.text(200, -40, f"Total Runs: {innings_runs} ({balls_faced} balls)| Strike Rate: {round(innings_runs/balls_faced*100, 2) if balls_faced > 0 else 0}",
+        ax.text(200, -40, f"Total Runs: {innings_runs} ({innings_balls} balls)| Strike Rate: {round(innings_runs/innings_balls*100, 2) if balls_faced > 0 else 0}",
                 fontsize=11, ha='center', fontweight='bold', color='darkgreen')
         # ax.text(200, -25, f"0s x {total_0s} | 1s x {total_1s} | 2s x {total_2s} | 3s x {total_3s} | 4s x {total_4s} | 6s x {total_6s}",
         # ax.text(200, -25, f"4s x {total_4s} | 6s x {total_6s}",
@@ -485,7 +534,7 @@ def wagon_zone_plot(
         phase_names = {
             1: "Powerplay (1-6)",
             2: "Middle (7-15)", 
-            3: "Death (16-20)"
+            3: "Slog (16-20)"
         }
         # phase_text = phase_names.get(phase, "All")
 
@@ -563,18 +612,6 @@ def wagon_zone_plot_descriptive(
     if inns is not None and len(inns) > 0:
         local_df = local_df[local_df['inns'].isin(inns)]
 
-    if bowler_id is not None:
-        local_df = local_df[local_df['p_bowl'] == bowler_id]
-
-        if not local_df.empty and bowler_name is None:
-            bowler_name = local_df['bowl'].iloc[0]
-    # Otherwise filter by bowler name
-    elif bowler_name is not None:
-        local_df = local_df[local_df['bowl'] == bowler_name]
-
-    if bowler_name:
-        local_df = local_df[local_df['bowl'] == bowler_name] #bowl
-
     if run_values is not None:
         local_df = local_df[local_df['batruns'].isin(run_values)] #batruns
 
@@ -632,6 +669,8 @@ def wagon_zone_plot_descriptive(
     if date_to is not None:
         local_df = local_df[local_df['date'] <= pd.to_datetime(date_to)]
 
+
+
     #ground filter
     # if ground is not None:
     #     local_df = local_df[local_df['ground'] == ground]
@@ -639,10 +678,8 @@ def wagon_zone_plot_descriptive(
     if ground is not None and len(ground) > 0:
         local_df = local_df[local_df['ground'].isin(ground)]
 
-
-
-    if bat_hand is not None:
-        local_df = local_df[local_df['bat_hand'] == bat_hand]
+    if bat_hand is not None and len(bat_hand) > 0:
+        local_df = local_df[local_df['bat_hand'].isin(bat_hand)]
 
     # if bowl_type is not None:
     #     local_df = local_df[local_df['bowl_type'] == bowl_type]
@@ -664,14 +701,49 @@ def wagon_zone_plot_descriptive(
         local_df = local_df[local_df['bowl_arm'].isin(bowl_arm)]
 
         
+    # === INNINGS STATS - Calculate BEFORE any bowler/bowl_type/bowl_kind/bowl_arm filter ===
     if player_name is None:
-        innings_valid_balls = local_df.copy()  # include all for team
-        innings_runs = innings_valid_balls['score'].sum() #score
+        innings_valid_balls = local_df.copy()
+        innings_runs = innings_valid_balls['score'].sum()
     else:
         innings_valid_balls = local_df[local_df['wide'] == 0]
-        innings_runs = innings_valid_balls['batruns'].sum() #batruns
+        innings_runs = innings_valid_balls['batruns'].sum()
 
-    innings_balls = innings_valid_balls[innings_valid_balls['wide'] == 0].shape[0]  # consistent valid balls
+    # innings_balls = innings_valid_balls[
+    #     ~((innings_valid_balls['wagonX'] == 0) & (innings_valid_balls['wagonY'] == 0))
+    # ].dropna(subset=['wagonX', 'wagonY']).shape[0]
+
+    # to check the filtered balls in summary
+    # valid_shots = innings_valid_balls[~((innings_valid_balls['wagonX'] == 0) & (innings_valid_balls['wagonY'] == 0))]
+
+    # innings_balls = valid_shots.shape[0]
+
+    # actual complete innings balls
+    innings_balls = innings_valid_balls.shape[0]
+
+    if bowler_id is not None:
+        local_df = local_df[local_df['p_bowl'] == bowler_id]
+
+        if not local_df.empty and bowler_name is None:
+            bowler_name = local_df['bowl'].iloc[0]
+    # Otherwise filter by bowler name
+    elif bowler_name is not None:
+        local_df = local_df[local_df['bowl'] == bowler_name]
+
+    if bowler_name:
+        local_df = local_df[local_df['bowl'] == bowler_name] #bowl
+
+    # if player_name is None:
+    #     innings_valid_balls = local_df.copy()  # include all for team
+    #     innings_runs = innings_valid_balls['score'].sum() #score
+    # else:
+    #     innings_valid_balls = local_df[local_df['wide'] == 0]
+    #     innings_runs = innings_valid_balls['batruns'].sum() #batruns
+
+    # # innings_balls = innings_valid_balls[innings_valid_balls['wide'] == 0].shape[0]  # consistent valid balls
+    # innings_balls = innings_valid_balls[
+    #     ~((innings_valid_balls['wagonX'] == 0) & (innings_valid_balls['wagonY'] == 0))
+    # ].dropna(subset=['wagonX', 'wagonY']).shape[0]
 
     # --- Core Filtering Logic (Team vs Player Mode) ---
     if player_name is None:
@@ -689,12 +761,13 @@ def wagon_zone_plot_descriptive(
         total_4s = (valid_shots['outcome'] == 'four').sum()
         total_6s = (valid_shots['outcome'] == 'six').sum()
 
-        total_0s = (valid_shots['batruns'] == 0).sum()
-        total_1s = (valid_shots['batruns'] == 1).sum()
-        total_2s = (valid_shots['batruns'] == 2).sum()
-        total_3s = (valid_shots['batruns'] == 3).sum()
+        total_0s = (innings_valid_balls['batruns'] == 0).sum()
+        total_1s = (innings_valid_balls['batruns'] == 1).sum()
+        total_2s = (innings_valid_balls['batruns'] == 2).sum()
+        total_3s = (innings_valid_balls['batruns'] == 3).sum()
 
 
+        # balls_faced = valid_shots.shape[0]
         balls_faced = valid_balls.shape[0]
 
         # control_pct = round(
@@ -702,8 +775,16 @@ def wagon_zone_plot_descriptive(
         # )#shotControl to control
 
         # Control calculation like spike graph
-        controlled_balls = valid_balls[valid_balls['control'] == 1]
-        control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2) if len(valid_balls) > 0 else 0.0
+        # controlled_balls = valid_balls[valid_balls['control'] == 1]
+        # control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2) if len(valid_balls) > 0 else 0.0
+        if len(valid_balls) == 0:
+            control_pct = 0.0
+        else:
+            # Convert mixed-type control column to numeric FIRST
+            control_numeric = pd.to_numeric(valid_balls['control'], errors='coerce')
+            # Now count all 1.0 values (regardless of original type)
+            controlled = (control_numeric == 1).sum()
+            control_pct = round(controlled / len(valid_balls) * 100, 2)
 
 
         shot_summary = valid_shots.groupby('shot').agg({ #shot
@@ -712,9 +793,17 @@ def wagon_zone_plot_descriptive(
             'isSix': 'sum'
         }).sort_values(by='score', ascending=False) #score
     else:
+        # valid_balls = local_df[local_df['wide'] == 0]
         valid_balls = local_df[(local_df['wide'] == 0) & (~local_df['control'].isna())]
+        # valid_shots = local_df[
+        #     ~((local_df['wagonX'] == 0) & (local_df['wagonY'] == 0))
+        # ].dropna(subset=['wagonX', 'wagonY'])
+
+        # ✅ ADD: Filter valid_shots the same way - exclude wides AND control nulls
         valid_shots = local_df[
-            ~((local_df['wagonX'] == 0) & (local_df['wagonY'] == 0))
+            (local_df['wide'] == 0) & 
+            ~((local_df['wagonX'] == 0) & (local_df['wagonY'] == 0)) &
+            (~local_df['control'].isna())
         ].dropna(subset=['wagonX', 'wagonY'])
 
         # ADD THESE TWO LINES:
@@ -727,20 +816,34 @@ def wagon_zone_plot_descriptive(
         total_4s = (valid_shots['outcome'] == 'four').sum()
         total_6s = (valid_shots['outcome'] == 'six').sum()
         
-        total_0s = (valid_shots['batruns'] == 0).sum()
-        total_1s = (valid_shots['batruns'] == 1).sum()
-        total_2s = (valid_shots['batruns'] == 2).sum()
-        total_3s = (valid_shots['batruns'] == 3).sum()
+        total_0s = (innings_valid_balls['batruns'] == 0).sum()
+        total_1s = (innings_valid_balls['batruns'] == 1).sum()
+        total_2s = (innings_valid_balls['batruns'] == 2).sum()
+        total_3s = (innings_valid_balls['batruns'] == 3).sum()
 
-        balls_faced = valid_balls.shape[0]
+        # balls_faced = valid_shots.shape[0]
+        # balls_faced = valid_balls.shape[0]
+
+        # balls_faced_df = valid_balls.dropna(subset=['wagonX', 'wagonY'])
+        # balls_faced_df = valid_shots
+        balls_faced_df = valid_balls
+        balls_faced = balls_faced_df.shape[0]  # ← Use the newly created balls_faced_df
 
         # control_pct = round(
         #     (valid_balls[valid_balls['control'] == 1].shape[0]) / balls_faced * 100, 2 
         # ) #shotControl to control
         
         #  Control calculation like spike graph
-        controlled_balls = valid_balls[valid_balls['control'] == 1]
-        control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2) if len(valid_balls) > 0 else 0.0
+        # controlled_balls = valid_balls[valid_balls['control'] == 1]
+        # control_pct = round(len(controlled_balls) / len(valid_balls) * 100, 2) if len(valid_balls) > 0 else 0.0
+        if len(valid_balls) == 0:
+            control_pct = 0.0
+        else:
+            # Convert mixed-type control column to numeric FIRST
+            control_numeric = pd.to_numeric(valid_balls['control'], errors='coerce')
+            # Now count all 1.0 values (regardless of original type)
+            controlled = (control_numeric == 1).sum()
+            control_pct = round(controlled / len(valid_balls) * 100, 2)
 
         shot_summary = valid_shots.groupby('shot').agg({ #shot
             'batruns': 'sum', #batruns
@@ -771,13 +874,23 @@ def wagon_zone_plot_descriptive(
         degree = (np.degrees(angle) + 360) % 360
         return int(degree // 45)
 
-    player_data['quadrant'] = player_data.apply(lambda row: get_quadrant(row['wagonX'], row['wagonY']), axis=1)
-    # if not player_data.empty:
-    #     player_data['quadrant'] = player_data.apply(lambda row: get_quadrant(row['wagonX'], row['wagonY']), axis=1)
-    # else:
-    #     player_data['quadrant'] = pd.Series(dtype='int')
-    quadrant_totals = [player_data[player_data['quadrant'] == q][score_col].sum() for q in range(8)]
-    total_score = sum(quadrant_totals)
+    # player_data['quadrant'] = player_data.apply(lambda row: get_quadrant(row['wagonX'], row['wagonY']), axis=1)
+    # # if not player_data.empty:
+    # #     player_data['quadrant'] = player_data.apply(lambda row: get_quadrant(row['wagonX'], row['wagonY']), axis=1)
+    # # else:
+    # #     player_data['quadrant'] = pd.Series(dtype='int')
+    # quadrant_totals = [player_data[player_data['quadrant'] == q][score_col].sum() for q in range(8)]
+    # total_score = sum(quadrant_totals)
+
+    # ✅ CHECK IF DATA IS EMPTY BEFORE ASSIGNING QUADRANT
+    if not player_data.empty:
+        player_data['quadrant'] = player_data.apply(lambda row: get_quadrant(row['wagonX'], row['wagonY']), axis=1)
+        quadrant_totals = [player_data[player_data['quadrant'] == q][score_col].sum() for q in range(8)]
+        total_score = sum(quadrant_totals)
+    else:
+        # Handle empty data case - initialize empty quadrant data
+        quadrant_totals = [0] * 8
+        total_score = 0
 
     # Plot
     fig, ax = plt.subplots(figsize=(7, 7), facecolor='none' if transparent else 'white')
@@ -795,8 +908,8 @@ def wagon_zone_plot_descriptive(
         y_end = center_y + 180 * np.sin(rad)
         ax.plot([center_x, x_end], [center_y, y_end], color='#8c8c8c', linewidth=1.3)
 
-    # Highlight Top Zones
-    top_quadrants = sorted(range(8), key=lambda i: quadrant_totals[i], reverse=True)[:2]
+    # ✅ HIGHLIGHT TOP ZONES ONLY IF THEY HAVE RUNS > 0
+    top_quadrants = [i for i in sorted(range(8), key=lambda i: quadrant_totals[i], reverse=True) if quadrant_totals[i] > 0][:2]
     rank_color = {top_quadrants[i]: 1.0 - i * 0.3 for i in range(len(top_quadrants))}
     cmap = cm.get_cmap('Blues')
 
@@ -808,9 +921,13 @@ def wagon_zone_plot_descriptive(
         mid_angle = np.deg2rad(theta1 + 22.5)
         label_x = center_x + 100 * np.cos(mid_angle)
         label_y = center_y + 100 * np.sin(mid_angle)
-        ax.text(label_x, label_y, f"{quadrant_totals[i]} runs", fontsize=12,
+        ax.text(label_x, label_y, f"{quadrant_totals[i]} runs", fontsize=10.5,
                 color='black' if i in top_quadrants else '#000',
                 ha='center', va='center',fontweight = 'bold')
+
+    # ✅ ADD "NO SHOTS" MESSAGE IF DATA IS EMPTY
+    if player_data.empty:
+        ax.text(180, 380, "No shots for selected filter(s)", ha='center', fontsize=13, color='red', fontweight='bold')
 
     # ax.set_xlim(-20, 470)
     # ax.set_ylim(-50, 370)
@@ -936,7 +1053,7 @@ def wagon_zone_plot_descriptive(
 
     # Text Summary
     if show_summary:
-        ax.text(180, 420, f"Total Runs: {innings_runs} ({balls_faced} balls) | Strike Rate: {round((innings_runs/balls_faced)*100, 2) if balls_faced > 0 else 0.0}",
+        ax.text(180, 420, f"Total Runs: {innings_runs} ({innings_balls} balls) | Strike Rate: {round((innings_runs/innings_balls)*100, 2) if balls_faced > 0 else 0.0}",
                 fontsize=11, ha='center', fontweight='bold', color='darkgreen')
         # # ax.text(180, 438, f"4s x {total_4s} | 6s x {total_6s}",
         # ax.text(180, 438, f"0s x {total_0s} | 1s x {total_1s} | 4s x {total_4s} | 6s x {total_6s}",
@@ -991,7 +1108,7 @@ def wagon_zone_plot_descriptive(
             ax.text(180, 475, f"{total_score} ({balls_faced} balls)",
                 fontsize=11, ha='center', fontweight='bold')
         else:
-            ax.text(50, 475, f"{total_score} ({balls_faced} balls)",
+            ax.text(30, 475, f"{total_score} ({balls_faced} balls)",
                 fontsize=11, ha='center', fontweight='bold')
         # ax.text(50, 475, f"{total_score} ({balls_faced} balls)",
         #         fontsize=11, ha='center', fontweight='bold')
@@ -1014,7 +1131,7 @@ def wagon_zone_plot_descriptive(
             ax.text(180, 475, f"vs {bowler_name}", fontsize=11, ha='center',
                 color='blue', fontweight='bold')
         else:
-            ax.text(320, 475, f" | vs {bowler_name}", fontsize=11, ha='center',
+            ax.text(360, 475, f" | vs {bowler_name}", fontsize=11, ha='center',
                 color='blue', fontweight='bold')
         # ax.text(300, 475, f" | vs {bowler_name}", fontsize=11, ha='center',
         #         color='blue', fontweight='bold')
@@ -1069,7 +1186,7 @@ def wagon_zone_plot_descriptive(
         phase_names = {
             1: "Powerplay (1-6)",
             2: "Middle (7-15)", 
-            3: "Death (16-20)"
+            3: "Slog (16-20)"
         }
         # phase_text = phase_names.get(phase, "All")
 
@@ -1082,7 +1199,7 @@ def wagon_zone_plot_descriptive(
             ax.text(180, 520, f"Phase: {phase_text}", 
                 fontsize=10, ha='center', color='crimson', fontweight='bold')
         else:
-            ax.text(220, 520, f"Phase: {phase_text}", 
+            ax.text(240, 520, f"Phase: {phase_text}", 
                 fontsize=10, ha='center', color='crimson', fontweight='bold')
 
         # ax.text(220, 520, f"Phase: {phase_text}", 
@@ -1132,12 +1249,12 @@ def wagon_zone_plot_descriptive(
         
         # Responsive positioning
         if not show_bowl_arm:
-            ax.text(180, 560, f"Bowl Pace: {bowl_kind_text}", 
+            ax.text(180, 560, f"Bowl Pace: {bowl_kind_text.capitalize()}", 
             # ax.text(180, 540, f"Bowl Pace: {bowl_kind_text}", 
                     fontsize=10, ha='center', color='teal', fontweight='bold')
         else:
             # ax.text(290, 540, f"Bowl Pace: {bowl_kind_text}", 
-            ax.text(70, 560, f"Bowl Pace: {bowl_kind_text}", 
+            ax.text(70, 560, f"Bowl Pace: {bowl_kind_text.capitalize()}", 
                     fontsize=10, ha='center', color='teal', fontweight='bold')
 
 
